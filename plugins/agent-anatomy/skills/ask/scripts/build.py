@@ -33,6 +33,7 @@ KINDS = {"product", "framework", "unknown"}
 MAX_EXCERPT_LINES = 45
 MAX_EXCERPTS_PER_REPO = 5
 MAX_CITATION_LINES = 30
+MAX_IMPL_LINES = 200
 DIAGRAM_KINDS = ("flowchart", "graph", "sequenceDiagram", "stateDiagram")
 BROWSERS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -44,7 +45,8 @@ BROWSERS = (
 
 sys.path.insert(0, HERE)
 from fetch import cache_path  # noqa: E402
-from review import MARKER, citation_hash, prose_fields, prose_hash  # noqa: E402
+from review import (MARKER, citation_hash, impl_dir, impl_lines, mirror_hash,  # noqa: E402
+                    prose_fields, prose_hash)
 
 
 def git(path, *args):
@@ -63,7 +65,7 @@ def read_lines(root, commit, path):
     return r.stdout.split("\n")
 
 
-def check(report):
+def check(report, report_path="report.json"):
     errors, warnings = [], []
 
     def need(obj, key, kind, where):
@@ -237,9 +239,6 @@ def check(report):
             used.add(m)
             if m not in cits:
                 errors.append(f"{where}: marker [^{m}] has no citation")
-    for cid in cits:
-        if cid not in used:
-            warnings.append(f"citations.{cid}: never referenced in the text")
 
     def must_cite(where, text):
         if text and not MARKER.search(text):
@@ -262,6 +261,51 @@ def check(report):
             for j, text in enumerate(d.get(key) or []):
                 must_cite(f"deep_dives[{i}].{key}[{j}]", text)
 
+    # ---- Reference implementation: runnable, tested, and mapped to the original ----
+    impl = report.get("implementation")
+    needs_impl = any(r.get("verdict") in ("implements", "partial") for r in repos)
+    if not impl and needs_impl:
+        errors.append("implementation: required when a repository implements the technique")
+    if impl:
+        w = "implementation"
+        for k in ("title", "intro"):
+            need(impl, k, str, w)
+        root = impl_dir(report, report_path)
+        files = need(impl, "files", list, w) or []
+        for name in files:
+            path = os.path.join(root, str(name))
+            if not os.path.isfile(path):
+                errors.append(f"{w}.files: {name} not found in {root}")
+            elif not os.path.basename(name).startswith("test_"):
+                with open(path, encoding="utf-8") as f:
+                    count = len(f.read().split("\n"))
+                if count > MAX_IMPL_LINES:
+                    errors.append(f"{w}.files: {name} is {count} lines; keep it to {MAX_IMPL_LINES} or fewer")
+        if not any(os.path.basename(str(n)).startswith("test_") for n in files):
+            errors.append(f"{w}.files: include a test file named test_*.py")
+        if not (impl.get("simplifications") or []):
+            errors.append(f"{w}.simplifications: list what the implementation leaves out or changes")
+        mirrors = need(impl, "mirrors", list, w) or []
+        seen_ids = set()
+        for i, m in enumerate(mirrors):
+            mw = f"{w}.mirrors[{i}]"
+            mid = need(m, "id", str, mw)
+            if mid in seen_ids:
+                errors.append(f"{mw}.id: duplicate")
+            seen_ids.add(mid)
+            need(m, "what", str, mw)
+            if m.get("citation") not in cits:
+                errors.append(f"{mw}.citation: must name an existing citation")
+            lines = impl_lines(report, report_path, m)
+            if lines is None:
+                errors.append(f"{mw}: 'file', 'start' and 'end' must point at lines of an implementation file")
+            elif not m.get("expect") or m["expect"] not in "\n".join(lines):
+                errors.append(f"{mw}.expect: required, and must appear in {m.get('file')}:{m.get('start')}-{m.get('end')}")
+        if len(mirrors) < 3:
+            errors.append(f"{w}.mirrors: map at least 3 behaviours to citations of the original")
+        for m in mirrors:
+            used.add(m.get("citation"))
+
     items = need(report, "build_your_own", list, "report") or []
     if not 3 <= len(items) <= 7:
         errors.append("build_your_own: 3 to 7 items")
@@ -270,11 +314,36 @@ def check(report):
         errors.append("differences: 2 to 6 items when more than one repository is compared")
     if len(repos) == 1 and diffs:
         errors.append("differences: leave out for a single-repository report")
+    for cid in cits:
+        if cid not in used:
+            warnings.append(f"citations.{cid}: never referenced in the text or the implementation")
     return errors, warnings
+
+
+def run_tests(report, report_path):
+    """Run the reference implementation's tests. Returns (error or None, number of tests)."""
+    impl = report.get("implementation")
+    if not impl:
+        return None, 0
+    root = impl_dir(report, report_path)
+    try:
+        r = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", root, "-p", "test_*.py"],
+                           capture_output=True, text=True, timeout=120, cwd=root)
+    except subprocess.TimeoutExpired:
+        return "implementation tests timed out after 120 seconds", 0
+    out = r.stderr + r.stdout
+    m = re.search(r"Ran (\d+) tests?", out)
+    ran = int(m.group(1)) if m else 0
+    if r.returncode != 0:
+        return "implementation tests failed:\n" + out.strip()[-1500:], ran
+    if ran < 5:
+        return f"implementation has {ran} tests; write at least 5", ran
+    return None, ran
 
 
 def check_review(report, report_path):
     """Return (errors, summary) for the independent review recorded beside the report."""
+    report_path_for_impl = report_path
     path = os.path.join(os.path.dirname(os.path.abspath(report_path)), "review.json")
     if not os.path.exists(path):
         return ["no review.json: run the reviewer pass (review.py packet, then review.py record), "
@@ -293,6 +362,15 @@ def check_review(report, report_path):
             errors.append(f"review: citation {cid} changed after it was reviewed; review it again")
         elif res.get("verdict") != "supported":
             errors.append(f"review: citation {cid} is '{res.get('verdict')}': {res.get('note', '')[:200]}")
+    for m in (report.get("implementation") or {}).get("mirrors") or []:
+        mid = f"impl:{m.get('id')}"
+        res = results.get(mid)
+        if not res:
+            errors.append(f"review: implementation item {mid} was not reviewed")
+        elif res.get("hash") != mirror_hash(report, report_path_for_impl, m):
+            errors.append(f"review: implementation item {mid} changed after it was reviewed; review it again")
+        elif res.get("verdict") != "supported":
+            errors.append(f"review: implementation item {mid} is '{res.get('verdict')}': {res.get('note', '')[:200]}")
     if review.get("prose_hash") != prose_hash(report):
         errors.append("review: the text changed after the review; the reviewer must re-check it for uncited statements")
     for u in review.get("uncited", []):
@@ -302,8 +380,20 @@ def check_review(report, report_path):
     return errors, summary
 
 
-def embed(report):
+def embed(report, report_path, tests_run):
     """Attach code, permalinks and repo links to the report for the page."""
+    impl = report.get("implementation")
+    if impl:
+        root = impl_dir(report, report_path)
+        loaded = []
+        for name in impl["files"]:
+            with open(os.path.join(root, name), encoding="utf-8") as f:
+                loaded.append({"name": name, "code": f.read().rstrip("\n"),
+                               "href": f"{impl.get('dir', 'impl')}/{name}"})
+        impl["files"] = loaded
+        impl["tests_run"] = tests_run
+        for m in impl["mirrors"]:
+            m.pop("expect", None)
     by_id = {r["id"]: r for r in report["repos"]}
     for r in report["repos"]:
         r["url"] = f"https://github.com/{r['repo']}" if r.get("repo") else None
@@ -432,7 +522,12 @@ def main():
     src, out = args
     with open(src, encoding="utf-8") as f:
         report = json.load(f)
-    errors, warnings = check(report)
+    errors, warnings = check(report, src)
+    tests_run = 0
+    if not errors:
+        test_error, tests_run = run_tests(report, src)
+        if test_error:
+            errors.append(test_error)
     review = None
     if not errors and not draft:
         review_errors, review = check_review(report, src)
@@ -443,7 +538,7 @@ def main():
         for e in errors:
             print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
-    embed(report)
+    embed(report, src, tests_run)
     report["review"] = review  # None on a draft build
 
     out_dir = os.path.dirname(os.path.abspath(out))

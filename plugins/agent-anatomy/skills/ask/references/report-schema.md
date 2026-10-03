@@ -86,6 +86,25 @@
     { "title": "Short claim", "detail": "The difference and, where the code shows it, the reason." }
   ],
   "build_your_own": [ "An ordered, practical point for someone writing their own agent." ],
+  "implementation": {
+    "title": "A loop detector in 95 lines of Python",
+    "intro": "What it is, what it follows, and how to use it, in two or three sentences.",
+    "dir": "impl",
+    "files": ["loop_detector.py", "test_loop_detector.py"],
+    "run": "python3 -m unittest -v",
+    "mirrors": [
+      {
+        "id": "cycle",
+        "what": "Cycles of length 1 to 5 are checked against the most recent calls",
+        "file": "loop_detector.py",
+        "start": 44,
+        "end": 53,
+        "expect": "cycle[i % k]",
+        "citation": "g-cycle"
+      }
+    ],
+    "simplifications": [ "What this version leaves out or changes, one item each." ]
+  },
   "method": {
     "scope": "What was read in each repository.",
     "limits": [ "What was not examined, and how sure each 'not found' is." ]
@@ -115,6 +134,8 @@ For a local repository that is not on GitHub, give `"local_path": "/abs/path"` i
 | `differences` | 2 to 6 when comparing; omit for a single repository |
 | `citations` | Required. Each needs `repo`, `path`, `start`, `end` (at most 30 lines), `expect` (must appear in the range) and `claim` (one sentence, at most 260 characters) |
 | Markers | Every `[^id]` must have a citation. Required in each repository `summary`, each comparison cell, and each `how_it_works` and `gotchas` item, except for repositories with an `absent` verdict |
+| `implementation` | Required when any repository has verdict `implements` or `partial`. `files` must exist in `dir` beside the report and include a `test_*.py`; the implementation file is at most 200 lines; the tests must pass (at least 5); `simplifications` must be non-empty |
+| `implementation.mirrors` | At least 3. Each needs a unique `id`, `what`, a `file` with `start`/`end` lines, an `expect` string found in those lines, and a `citation` that exists. Each is reviewed like a claim |
 | `review.json` | Required for a final build: written by `review.py record` from the reviewer's verdicts. Every citation must be `supported`, the text must be unchanged since the review, and no uncited statements may be listed. `--draft` skips this and stamps the page as unreviewed |
 | `build_your_own` | 3 to 7 |
 

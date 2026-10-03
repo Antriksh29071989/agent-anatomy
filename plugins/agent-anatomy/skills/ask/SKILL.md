@@ -10,7 +10,7 @@ Question: $ARGUMENTS
 
 Answer one pinpoint question about how agents are built by reading how real agent codebases implement it. The reader knows the textbook answer ("compression means summarising old messages") and wants the production one: what triggers it, what the thresholds are, what happens when it fails, and which classes do the work.
 
-You write a report file with explanations, line ranges and a citation for every factual statement; a script pulls the code from the repositories, an independent reviewer checks each claim against the source, and only then is the page rendered. Paths below (`scripts/`, `references/`) are relative to this skill's base directory.
+You write a report file with explanations, line ranges and a citation for every factual statement, plus a small tested implementation that follows the original design; a script pulls the code from the repositories, an independent reviewer checks each claim against the source, and only then is the page rendered. Paths below (`scripts/`, `references/`) are relative to this skill's base directory.
 
 ## Phase 0 - Get a question
 
@@ -79,7 +79,19 @@ Excerpt notes, diagram captions and diagram labels state facts too: give notes a
 
 The build requires a citation in each repository summary, each comparison cell, and each paragraph of `how_it_works` and `gotchas` (repositories with an `absent` verdict are exempt; their evidence is the `searched` list).
 
-## Phase 6 - Draft build
+## Phase 6 - Write the working version
+
+Every report whose repositories implement the technique ships a small implementation the reader can run. Put it in `reports/<slug>/impl/`:
+
+- **One implementation file and one test file** (`test_*.py`), Python, standard library only, 200 lines or fewer for the implementation. Anything external, such as the model call, is a function the caller passes in.
+- **Follow the original, do not improvise.** Reproduce the mechanism you documented: the same thresholds, the same comparisons, the same order of steps, the same response. Name constants after the originals. When several repositories were compared, combine their approaches only where they fit together, and say which part comes from which.
+- **Write it fresh.** Do not copy code from the repositories; re-express the logic. Say so in the module docstring.
+- **Simpler is fine, different is not.** You may leave things out. List every omission and change in `simplifications`, in plain words. An undeclared difference from the original is a defect.
+- **Tests state the behaviour.** At least 5, each named for the rule it checks, including the boundary cases (the call just under a threshold and the one that reaches it).
+
+Then describe it in the report's `implementation` block: a title, a one-paragraph intro, the files, and `mirrors`, a list mapping each mirrored behaviour to the lines of your code that do it and to the citation of the original (`file`, `start`, `end`, `expect`, `citation`). Map every behaviour you reproduced; the reviewer checks each mapping.
+
+## Phase 7 - Draft build
 
 Write `reports/<slug>/report.json` in the user's current working directory (or where they asked), following `references/report-schema.md`, then:
 
@@ -87,16 +99,16 @@ Write `reports/<slug>/report.json` in the user's current working directory (or w
 python3 scripts/build.py --draft reports/<slug>/report.json reports/<slug>/index.html
 ```
 
-The draft build checks every commit, path, line range and `expect` string for excerpts and citations, and that the required text is cited. Fix the report, not the check. The page it writes is stamped as an unreviewed draft.
+The draft build checks every commit, path, line range and `expect` string for excerpts and citations, and that the required text is cited. It also runs the implementation's tests and checks that every mirror points at real lines and a real citation. Fix the report, not the check. The page it writes is stamped as an unreviewed draft.
 
-## Phase 7 - Independent review
+## Phase 8 - Independent review
 
 The author of a report is the wrong person to check it. Hand it to a reviewer that has not seen your reasoning:
 
 - Spawn the `claim-reviewer` agent (`agent-anatomy:claim-reviewer`) with the report path and this skill's `scripts/` path. If that agent type is not available, start a fresh general-purpose agent and give it the full contents of the plugin's `agents/claim-reviewer.md` as its instructions.
 - Do not tell the reviewer what you expect, do not argue the claims in the prompt, and do not write `verdicts.json` or `review.json` yourself.
 
-The reviewer runs `scripts/review.py packet`, judges each claim against the cited lines as `supported`, `partial`, `unsupported` or `unclear`, lists factual sentences that lack a citation, and records the result with `scripts/review.py record`, which writes `review.json`.
+The reviewer runs `scripts/review.py packet`, judges each claim against the cited lines as `supported`, `partial`, `unsupported` or `unclear`, judges each implementation mirror against the claim it is meant to follow, lists factual sentences that lack a citation, and records the result with `scripts/review.py record`, which writes `review.json`.
 
 Then act on it:
 
@@ -104,13 +116,13 @@ Then act on it:
 - Any edit to a claim or to the text invalidates that part of the review. Send the reviewer back (continue the same agent) to re-check what changed, until everything is `supported` and nothing is flagged.
 - If you believe the reviewer is mistaken, say why in a message to it and let it re-check. If you still disagree after that, tell the user; do not overrule it silently.
 
-## Phase 8 - Final build
+## Phase 9 - Final build
 
 ```
 python3 scripts/build.py reports/<slug>/report.json reports/<slug>/index.html
 ```
 
-Without `--draft` the build refuses unless `review.json` covers every citation as `supported`, matches the current text, and lists no uncited statements. It also writes `card.png`, a share card (needs a Chrome-family browser), and link-preview tags. Set `meta.site_url` only if the user says where the page will be published.
+Without `--draft` the build refuses unless the implementation's tests pass and `review.json` covers every citation and every implementation mirror as `supported`, matches the current text, and lists no uncited statements. It also writes `card.png`, a share card (needs a Chrome-family browser), and link-preview tags. Set `meta.site_url` only if the user says where the page will be published.
 
 Finish in chat with: the path to `index.html`, the direct answer in two or three sentences, the most surprising difference, what the reviewer caught and how it was resolved, and anything not found or not examined. Offer to open the page.
 

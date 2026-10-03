@@ -1,7 +1,7 @@
 {
  "reviewer": "independent reviewer agent",
- "reviewed_at": "2026-10-03",
- "prose_hash": "2fa447d9fd3b73b1",
+ "reviewed_at": "2026-10-04",
+ "prose_hash": "d02a37a06a461fe7",
  "results": [
   {
    "id": "g-key",
@@ -314,6 +314,90 @@
    "verdict": "supported",
    "note": "",
    "hash": "192038f284dd9a8d"
+  },
+  {
+   "id": "g-clear",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3cc22aea618c7188"
+  },
+  {
+   "id": "g-reset",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f790dd57cb0bd0f1"
+  },
+  {
+   "id": "g-trim",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b25e66d86ee34f8f"
+  },
+  {
+   "id": "impl:key",
+   "verdict": "supported",
+   "note": "",
+   "hash": "a94169b2a1272994"
+  },
+  {
+   "id": "impl:threshold",
+   "verdict": "supported",
+   "note": "",
+   "hash": "151d5306d5abd4a8"
+  },
+  {
+   "id": "impl:trim",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3d4600090880ca52"
+  },
+  {
+   "id": "impl:cycle",
+   "verdict": "supported",
+   "note": "",
+   "hash": "256aac1ed528fa1a"
+  },
+  {
+   "id": "impl:count",
+   "verdict": "supported",
+   "note": "Supported: `self.detections > 1` (loop_detector.py:89) matches `loopResult.count > 1` (client.ts:762, 828). The missing turn-budget exception (client.ts:766-768) is now a declared simplification.",
+   "hash": "22bac398e4d76c9b"
+  },
+  {
+   "id": "impl:keepcount",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b7a165f541226d24"
+  },
+  {
+   "id": "impl:reset",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0be6bb4b26f5c14e"
+  },
+  {
+   "id": "impl:sameresult",
+   "verdict": "supported",
+   "note": "Supported: line 59 now compares whole steps including is_error, consistent with the type check at stuck_detector.py:331-332; threshold 4 and boundary match stuck_detector.py:163-175.",
+   "hash": "19344d83331893ef"
+  },
+  {
+   "id": "impl:streak",
+   "verdict": "supported",
+   "note": "",
+   "hash": "9e23d3fee73507b8"
+  },
+  {
+   "id": "impl:nudge",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6972ba7112520d52"
+  },
+  {
+   "id": "impl:stuck",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d0f0df294254218a"
   }
  ],
  "uncited": []

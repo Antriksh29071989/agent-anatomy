@@ -14,7 +14,8 @@ reviewer reads the packet (and the repositories) and writes verdicts.json:
     "uncited": [ { "where": "deep_dives[0].how_it_works[2]", "text": "...", "note": "why it needs a citation" } ]
   }
 
-verdict is one of: supported, partial, unsupported, unclear.
+verdict is one of: supported, partial, unsupported, unclear. Items of the
+reference implementation are judged the same way, with ids like "impl:cycle".
 `record` binds each verdict to a hash of the claim it judged, so editing a
 claim or its line range afterwards invalidates that verdict.
 """
@@ -50,6 +51,31 @@ def citation_hash(cit, commit):
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
+def impl_dir(report, report_path):
+    impl = report.get("implementation") or {}
+    return os.path.join(os.path.dirname(os.path.abspath(report_path)), impl.get("dir", "impl"))
+
+
+def impl_lines(report, report_path, mirror):
+    """The lines of the reference implementation that a mirror points at, or None."""
+    path = os.path.join(impl_dir(report, report_path), mirror.get("file", ""))
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    start, end = mirror.get("start"), mirror.get("end")
+    if not (isinstance(start, int) and isinstance(end, int) and 1 <= start <= end <= len(lines)):
+        return None
+    return lines[start - 1:end]
+
+
+def mirror_hash(report, report_path, mirror):
+    cit = (report.get("citations") or {}).get(mirror.get("citation"), {})
+    blob = json.dumps([mirror.get("what"), mirror.get("citation"), cit.get("claim"),
+                       impl_lines(report, report_path, mirror)], ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def prose_fields(report):
     """Every piece of explanatory text, as (location, text), in a fixed order."""
     out = [("answer", report.get("answer", ""))]
@@ -74,6 +100,10 @@ def prose_fields(report):
         out.append((f"differences[{i}]", f"{x.get('title', '')}. {x.get('detail', '')}"))
     for i, x in enumerate(report.get("build_your_own") or []):
         out.append((f"build_your_own[{i}]", x))
+    impl = report.get("implementation") or {}
+    out.append(("implementation.intro", impl.get("intro", "")))
+    for i, x in enumerate(impl.get("simplifications") or []):
+        out.append((f"implementation.simplifications[{i}]", x))
     return [(where, text) for where, text in out if text]
 
 
@@ -86,7 +116,7 @@ def commits(report):
     return {r["id"]: r for r in report.get("repos", [])}
 
 
-def packet(report):
+def packet(report, report_path):
     by_id = commits(report)
     cits = report.get("citations") or {}
     print("# REVIEW PACKET")
@@ -111,6 +141,30 @@ def packet(report):
             mark = ">" if cit["start"] <= n <= cit["end"] else " "
             print(f"{mark}{n:>6}  {lines[n - 1]}")
         print()
+    impl = report.get("implementation") or {}
+    if impl.get("mirrors"):
+        print("# REFERENCE IMPLEMENTATION\n")
+        print("The report ships a small implementation written to follow the original designs.")
+        print(f"Files are in {impl_dir(report, report_path)}. For each item below, decide whether the")
+        print("IMPLEMENTATION lines do what the ORIGINAL CLAIM says the original does: the same numbers,")
+        print("comparisons (> versus >=), conditions and order. Use the id shown, e.g. impl:cycle.\n")
+        for m in impl["mirrors"]:
+            cit = cits.get(m.get("citation"), {})
+            print(f"## impl:{m.get('id')}")
+            print(f"BEHAVIOUR: {m.get('what')}")
+            print(f"ORIGINAL CLAIM ({m.get('citation')}): {cit.get('claim')}")
+            lines = impl_lines(report, report_path, m)
+            print(f"IMPLEMENTATION {m.get('file')}:{m.get('start')}-{m.get('end')}:")
+            if lines is None:
+                print("  <lines not found>")
+            else:
+                for n, line in enumerate(lines, m["start"]):
+                    print(f"{n:>6}  {line}")
+            print()
+        print("Declared simplifications (differences the author admits to):")
+        for x in impl.get("simplifications") or []:
+            print(f"  - {x}")
+        print()
     print("# PROSE (check for factual statements that carry no [^id] marker)\n")
     for where, text in prose_fields(report):
         print(f"- {where}: {text}")
@@ -121,8 +175,17 @@ def record(report, report_path, verdicts):
     cits = report.get("citations") or {}
     results, problems = [], []
     seen = set()
+    mirrors = {f"impl:{m.get('id')}": m for m in (report.get("implementation") or {}).get("mirrors") or []}
     for item in verdicts.get("results", []):
         cid = item.get("id")
+        if cid in mirrors:
+            if item.get("verdict") not in VERDICTS:
+                problems.append(f"{cid}: verdict must be one of {sorted(VERDICTS)}")
+                continue
+            seen.add(cid)
+            results.append({"id": cid, "verdict": item["verdict"], "note": item.get("note", ""),
+                            "hash": mirror_hash(report, report_path, mirrors[cid])})
+            continue
         if cid not in cits:
             problems.append(f"verdict for unknown citation '{cid}'")
             continue
@@ -133,7 +196,7 @@ def record(report, report_path, verdicts):
         entry = by_id.get(cits[cid].get("repo"), {})
         results.append({"id": cid, "verdict": item["verdict"], "note": item.get("note", ""),
                         "hash": citation_hash(cits[cid], entry.get("commit"))})
-    missing = [c for c in cits if c not in seen]
+    missing = [c for c in list(cits) + list(mirrors) if c not in seen]
     if missing:
         problems.append(f"no verdict for: {', '.join(missing)}")
     if problems:
@@ -162,7 +225,7 @@ def main():
     with open(sys.argv[2], encoding="utf-8") as f:
         report = json.load(f)
     if sys.argv[1] == "packet":
-        packet(report)
+        packet(report, sys.argv[2])
     else:
         if len(sys.argv) != 4:
             sys.exit(__doc__)

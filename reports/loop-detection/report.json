@@ -839,6 +839,153 @@
    "end": 757,
    "expect": "continue",
    "claim": "After the no-follow-up block ends with a break, the loop continues to its next iteration."
+  },
+  "g-clear": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 756,
+   "end": 762,
+   "expect": "clearDetection",
+   "claim": "`clearDetection` resets only the detected flag and keeps the detection count, so the next detection is count 2."
+  },
+  "g-reset": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 744,
+   "end": 751,
+   "expect": "detectedCount = 0",
+   "claim": "`reset` clears the tool-call history and sets the detection count back to 0."
+  },
+  "g-trim": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 317,
+   "end": 320,
+   "expect": "maxRequiredLength",
+   "claim": "The tool-call history is trimmed to the last 5 times the loop threshold entries."
   }
+ },
+ "implementation": {
+  "title": "A loop detector in 95 lines of Python",
+  "intro": "One class, standard library only. It combines Gemini CLI's exact-match cycle detection and warn-then-stop response with OpenHands' result-aware and error-streak rules. Feed it each tool call once it has finished; it answers continue, warn or stop.",
+  "dir": "impl",
+  "files": [
+   "loop_detector.py",
+   "test_loop_detector.py"
+  ],
+  "run": "python3 -m unittest -v",
+  "mirrors": [
+   {
+    "id": "key",
+    "what": "A tool call is fingerprinted as the SHA-256 of its name and JSON arguments",
+    "file": "loop_detector.py",
+    "start": 29,
+    "end": 31,
+    "expect": "sha256",
+    "citation": "g-key"
+   },
+   {
+    "id": "threshold",
+    "what": "A cycle must repeat 5 times",
+    "file": "loop_detector.py",
+    "start": 17,
+    "end": 17,
+    "expect": "TOOL_CALL_LOOP_THRESHOLD = 5",
+    "citation": "g-toolthr"
+   },
+   {
+    "id": "trim",
+    "what": "History is trimmed to 5 times the threshold",
+    "file": "loop_detector.py",
+    "start": 74,
+    "end": 75,
+    "expect": "keep",
+    "citation": "g-trim"
+   },
+   {
+    "id": "cycle",
+    "what": "Cycles of length 1 to 5 are checked against the most recent calls",
+    "file": "loop_detector.py",
+    "start": 44,
+    "end": 53,
+    "expect": "cycle[i % k]",
+    "citation": "g-cycle"
+   },
+   {
+    "id": "count",
+    "what": "Each detection increments a counter; the first warns and the second stops",
+    "file": "loop_detector.py",
+    "start": 87,
+    "end": 90,
+    "expect": "self.detections += 1",
+    "citation": "g-turnstart"
+   },
+   {
+    "id": "keepcount",
+    "what": "The warning does not reset the counter or the history, so a repeat is detection 2",
+    "file": "loop_detector.py",
+    "start": 87,
+    "end": 94,
+    "expect": "Potential loop detected",
+    "citation": "g-clear"
+   },
+   {
+    "id": "reset",
+    "what": "A new prompt clears the history and the counter",
+    "file": "loop_detector.py",
+    "start": 40,
+    "end": 42,
+    "expect": "self.detections = [], [], 0",
+    "citation": "g-reset"
+   },
+   {
+    "id": "sameresult",
+    "what": "Four identical call-and-result pairs in a row means stuck",
+    "file": "loop_detector.py",
+    "start": 55,
+    "end": 60,
+    "expect": "SAME_RESULT_THRESHOLD",
+    "citation": "o-s1"
+   },
+   {
+    "id": "streak",
+    "what": "The error streak counts how often the latest call has just errored, without comparing the errors",
+    "file": "loop_detector.py",
+    "start": 62,
+    "end": 69,
+    "expect": "is_error",
+    "citation": "o-streak"
+   },
+   {
+    "id": "nudge",
+    "what": "At exactly 3 errors in a row the model gets a nudge naming the tool and the error",
+    "file": "loop_detector.py",
+    "start": 79,
+    "end": 83,
+    "expect": "ERROR_THRESHOLD",
+    "citation": "o-nudge"
+   },
+   {
+    "id": "stuck",
+    "what": "More than 3 errors in a row means stuck",
+    "file": "loop_detector.py",
+    "start": 84,
+    "end": 85,
+    "expect": "streak > ERROR_THRESHOLD",
+    "citation": "o-s2"
+   }
+  ],
+  "simplifications": [
+   "Python, not TypeScript or the original Python: the logic is rewritten, not copied.",
+   "No repeated-text detector and no model-based check; only Gemini CLI's tool-call cycle detector is reproduced.",
+   "It checks a call after it has finished, so that results can be compared. Gemini CLI checks when the model requests the call, before it runs, so there the repeated call is stopped before executing.",
+   "There is no turn budget. In Gemini CLI a first detection stops the turn instead of warning when the turn budget is already used up; here a first detection always warns.",
+   "Two calls are the same when their name and arguments match. OpenHands also compares the agent's accompanying thought and the type of each event.",
+   "OpenHands' monologue and alternating-pattern checks are left out, and its 20-event window after the last user message is replaced by `reset()` on a new prompt.",
+   "A step is one call with its result and whether it was an error, so the same-result rule compares whole steps; OpenHands compares separate lists of actions and observations.",
+   "The nudge fires whenever the streak is exactly 3; OpenHands also remembers which error event it already nudged for.",
+   "Stopping is returned as a verdict for the caller to act on; the originals emit an event or set a conversation status.",
+   "Fingerprints use Python's JSON formatting, so the hash values differ from Gemini CLI's even though the comparison behaves the same."
+  ]
  }
 }

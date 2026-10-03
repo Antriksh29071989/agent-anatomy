@@ -138,7 +138,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
       <p>OpenHands takes the rule-based route. It compares both the action and what came back, so a command that is polled and returns something new each time is not mistaken for a loop.</p>
       <p>Both can warn the model before stopping it. Gemini CLI injects a message on the first detection and ends the turn on the second. OpenHands does this for one pattern only: when the same action keeps erroring, it sends a nudge naming the tool and the error before it marks the run as stuck.</p>
       <p>LangGraph, a framework, does not look at behaviour at all. It counts steps and leaves the rest to the graph you write.</p>
-      <a class="more" href="reports/loop-detection/">Read the full report &rarr;</a>
+      <a class="more" href="reports/loop-detection/">Read the full report &rarr;</a> &nbsp; <a class="more" href="reports/loop-detection/#implementation">Working code &rarr;</a>
     </div>
   </section>
 
@@ -149,7 +149,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
       <h3><a href="reports/chat-compression/">How Gemini CLI compresses chat history</a></h3>
       <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
       <p>It then asks the model to critique its own summary. If the new history has more tokens than the old one, it is thrown away, and automatic attempts stop calling the summariser until a new chat starts.</p>
-      <a class="more" href="reports/chat-compression/">Read the report &rarr;</a>
+      <a class="more" href="reports/chat-compression/">Read the report &rarr;</a> &nbsp; <a class="more" href="reports/chat-compression/#implementation">Working code &rarr;</a>
     </article>
     <article class="col">
       <p class="kicker">How it works</p>
@@ -161,6 +161,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
         <li>The implementation is found by search, then read and traced.</li>
         <li>A script copies the quoted lines from that commit, and fails the build if anything does not match.</li>
         <li>A second agent tries to disprove each claim against the source. Nothing is published until every claim is supported.</li>
+        <li>Each report ends with working code that follows the original design, with tests that must pass.</li>
       </ol>
       <p class="cap">The reviewer is a second AI pass, not a proof. Follow a citation before relying on a claim.</p>
     </article>

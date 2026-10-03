@@ -66,6 +66,21 @@ Short excerpts with line numbers, each linked to the exact lines at a pinned com
 
 ![A verified code excerpt](docs/images/code.png)
 
+### A working version you can run
+
+Each report ends with a small implementation of the technique, written to follow the original design: one Python file and its tests, standard library only. A table maps each behaviour in the code to the lines of the original it mirrors, and a list says what was left out.
+
+```
+curl -O https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/impl/loop_detector.py
+curl -O https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/impl/test_loop_detector.py
+python3 -m unittest -v
+```
+
+| Technique | Follows | Code | Tests |
+|---|---|---|---|
+| Loop detection | Gemini CLI's call-cycle detector and warn-then-stop response; OpenHands' same-result and error-streak rules | [loop_detector.py](reports/loop-detection/impl/loop_detector.py) | [11](reports/loop-detection/impl/test_loop_detector.py) |
+| Chat compression | Gemini CLI's threshold, tool-output budget, safe split, snapshot, self-critique and size guard | [chat_compressor.py](reports/chat-compression/impl/chat_compressor.py) | [17](reports/chat-compression/impl/test_chat_compressor.py) |
+
 Then: where the approaches differ and why, and a "build your own" list. Each report also gets a 1200×630 share card and link-preview tags.
 
 ## How a report earns trust
@@ -75,6 +90,8 @@ Then: where the approaches differ and why, and a "build your own" list. Each rep
 **Every fact is cited.** Each statement about the code carries a small numbered link to the exact lines that support it, and the page ends with an evidence list: every claim, and where to check it. The build rejects a report whose summaries, comparison cells or explanations state facts without a citation.
 
 **A second agent tries to disprove it.** Before a report can be built for publishing, a separate reviewer agent with a fresh context reads each claim next to the cited lines and marks it supported, partial, unsupported or unclear. It also flags factual sentences that have no citation. The build refuses to publish unless every claim is supported, and any later edit to a claim or to the text invalidates the review.
+
+**The working code is held to the same standard.** The build runs its tests and refuses to publish if they fail. Each behaviour the code reproduces is mapped to a reviewed citation, and the reviewer checks that the code does what the original does: the same thresholds, comparisons and order. Anything left out has to be declared.
 
 What this does not do: the reviewer is another AI pass, not a proof. It catches claims that say more than the code shows; it can still miss things. Follow a citation before you rely on a claim.
 
@@ -113,8 +130,9 @@ All are MIT or Apache-2.0 licensed ([registry](plugins/agent-anatomy/skills/ask/
 1. **Fetch.** [`fetch.py`](plugins/agent-anatomy/skills/ask/scripts/fetch.py) clones each repository at depth 1 into `~/.cache/agent-anatomy` and reports the pinned commit. The cache is reused across questions.
 2. **Find.** Claude searches by every name the technique goes by, reads the candidates, and traces the mechanism from trigger to effect.
 3. **Explain, compare and cite.** It writes `report.json`: the answer, verdicts, comparison rows, deep dives, diagrams, excerpt line ranges, and a citation for every fact ([schema](plugins/agent-anatomy/skills/ask/references/report-schema.md)).
-4. **Review.** The [`claim-reviewer`](plugins/agent-anatomy/agents/claim-reviewer.md) agent checks each claim against the source via [`review.py`](plugins/agent-anatomy/skills/ask/scripts/review.py) and records its verdicts.
-5. **Verify and render.** [`build.py`](plugins/agent-anatomy/skills/ask/scripts/build.py) checks every commit, path and line range, requires a passing review, pulls the code, and fills the [template](plugins/agent-anatomy/skills/ask/assets/template.html).
+4. **Implement.** It writes a small tested implementation that follows the original design, and maps each behaviour to its citation.
+5. **Review.** The [`claim-reviewer`](plugins/agent-anatomy/agents/claim-reviewer.md) agent checks each claim, and each piece of the implementation, against the source via [`review.py`](plugins/agent-anatomy/skills/ask/scripts/review.py) and records its verdicts.
+6. **Verify and render.** [`build.py`](plugins/agent-anatomy/skills/ask/scripts/build.py) checks every commit, path and line range, requires a passing review, pulls the code, and fills the [template](plugins/agent-anatomy/skills/ask/assets/template.html).
 
 ## Limits
 

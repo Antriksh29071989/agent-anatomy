@@ -119,6 +119,12 @@ td.who .verdict { display: block; margin-top: 7px; }
 .excerpt .ln { display: block; padding: 0 16px 0 0; white-space: pre; }
 .excerpt .ln::before { content: attr(data-n); display: inline-block; width: 52px; padding-right: 14px; text-align: right; color: var(--ink-faint); user-select: none; }
 .excerpt p { margin: 0; padding: 11px 16px 13px; border-top: 1px solid var(--rule-soft); font: italic 15px/1.5 var(--display); color: var(--ink-soft); }
+.runline { font-size: 15px; color: var(--ink-soft); }
+.runline a.dl { color: var(--accent); border-bottom: 1px solid var(--rule-soft); font: 13px var(--mono); }
+.parts td.what { font: 15px/1.5 var(--body); color: var(--ink-soft); white-space: normal; min-width: 240px; }
+details.more { margin: 0 0 18px; }
+details.more summary { cursor: pointer; font: 700 11.5px/1 var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--accent); padding: 10px 0; }
+details.more .excerpt { margin-top: 8px; }
 ul.plain { margin: 0; padding: 0; list-style: none; }
 ul.plain li { padding: 9px 0 9px 20px; border-bottom: 1px solid var(--rule-hair); position: relative; color: var(--ink-soft); }
 ul.plain li::before { content: "\2022"; position: absolute; left: 2px; color: var(--accent); }
@@ -218,7 +224,7 @@ footer .gen { font: italic 13.5px var(--display); }
   app.appendChild(h("div", { class: "topline" },
     h("a", { class: "brand", href: "../../" }, raw("Agent Anatomy")),
     h("a", { href: "../../" }, raw("\u2190 All reports"))));
-  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"], ["evidence", "Evidence"], ["sources", "Sources"]]);
+  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"]], (data.implementation ? [["implementation", "Working code"]] : []), [["evidence", "Evidence"], ["sources", "Sources"]]);
   app.appendChild(h("header", { class: "head" },
     h("p", { class: "kicker" }, raw(meta.title || "Report")),
     h("h1", null, meta.question || meta.title || ""),
@@ -303,6 +309,45 @@ footer .gen { font: italic 13.5px var(--display); }
   sec = section("build", "Build your own", "If you are building your own", single ? "What this implementation suggests, in order of how early you need it." : "What these implementations suggest, in order of how early you need it.");
   sec.appendChild(h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); })));
   sec.style.borderBottom = "0";
+
+  var impl = data.implementation;
+  if (impl && (impl.files || []).length) {
+    sec.style.borderBottom = "";
+    sec = section("implementation", "A working version", impl.title, null);
+    sec.appendChild(h("p", { class: "lead" }, impl.intro));
+    sec.appendChild(h("p", { class: "runline" },
+      h("span", { class: "verdict implements" }, raw(impl.tests_run + " tests pass")),
+      raw(" \u00b7 run them: "), h("code", null, raw(impl.run || "python3 -m unittest -v")),
+      raw(" \u00b7 download: "), impl.files.map(function (f, i) {
+        return h("span", null, raw(i ? ", " : ""), h("a", { class: "dl", href: f.href, download: "" }, raw(f.name)));
+      })));
+    sec.appendChild(h("h4", null, "How it maps to the original"));
+    sec.appendChild(h("div", { class: "tablewrap" }, h("table", { class: "parts" },
+      h("thead", null, h("tr", null, h("th", null, "Behaviour"), h("th", null, "In this code"), h("th", null, "In the original"))),
+      h("tbody", null, (impl.mirrors || []).map(function (m) {
+        var c = citations[m.citation] || {};
+        return h("tr", null, h("td", { class: "what" }, m.what),
+          h("td", { class: "path" }, raw(m.file + ":" + m.start + "-" + m.end)),
+          h("td", { class: "path" }, link(c.url, raw((c.path || "").split("/").pop() + ":" + c.start + "-" + c.end)), citeRef(m.citation)));
+      })))));
+    impl.files.forEach(function (f) {
+      var first = f.name === impl.files[0].name;
+      var pre = h("pre", null, String(f.code).split("\n").map(function (line, i) {
+        return h("span", { class: "ln", "data-n": String(i + 1) }, raw(line || " "));
+      }));
+      var block = h("div", { class: "excerpt" },
+        h("header", null, h("b", null, raw(f.name)), h("a", { href: f.href, download: "" }, raw("download"))), pre);
+      if (first) { sec.appendChild(h("h4", null, "The code")); sec.appendChild(block); }
+      else {
+        var det = h("details", { class: "more" }, h("summary", null, raw("Show " + f.name)), block);
+        sec.appendChild(det);
+      }
+    });
+    if ((impl.simplifications || []).length) {
+      sec.appendChild(h("h4", null, "What this version leaves out"));
+      sec.appendChild(h("ul", { class: "plain" }, impl.simplifications.map(function (x) { return h("li", null, x); })));
+    }
+  }
 
   if (citeOrder.length) {
     sec = section("evidence", "Evidence", "Every claim, and the lines behind it", data.review

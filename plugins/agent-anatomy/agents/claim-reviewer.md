@@ -26,7 +26,13 @@ You will be given the path to a `report.json` and the path to the skill's `scrip
 
 3. Read the prose section of the packet. Flag any sentence that states a checkable fact about the code (a number, a trigger, an order of steps, a condition, a name) and has no `[^id]` marker in that sentence or covering it. Also flag a sentence whose marker cites a claim that says something different from the sentence. Do not flag opinions, advice in `build_your_own`, section headings, or statements about what was not examined.
 
-4. Write your verdicts to `verdicts.json` in the same directory as the report:
+4. If the packet has a REFERENCE IMPLEMENTATION section, review it too. The report ships a small implementation that is meant to follow the original designs. For each `impl:<id>` item, the packet shows a behaviour, the original claim it is supposed to mirror, and the implementation lines. Decide whether those lines do what the original claim describes: the same numbers, the same comparison (`>` versus `>=`), the same conditions and order. Open the implementation file and its tests if you need context, and run the tests (`python3 -m unittest` in the implementation directory) to confirm they pass.
+   - `supported` - the lines implement the behaviour the claim describes.
+   - `partial` / `unsupported` - they differ in a way that is not listed under the declared simplifications. Say exactly how.
+   - A difference the author has declared as a simplification is not an error, but the declaration must be accurate: flag a simplification that misdescribes the original or the code under `uncited`.
+   - Also flag, under `uncited`, any behaviour in the implementation that contradicts a reviewed claim and is not declared.
+
+5. Write your verdicts to `verdicts.json` in the same directory as the report:
 
 ```json
 {
@@ -42,9 +48,9 @@ You will be given the path to a `report.json` and the path to the skill's `scrip
 }
 ```
 
-   Every citation needs exactly one result. A `note` is required for anything other than `supported`, and must be specific enough for the author to fix the claim: quote the line that contradicts it and give its number.
+   Every citation and every `impl:<id>` item needs exactly one result. A `note` is required for anything other than `supported`, and must be specific enough for the author to fix the claim: quote the line that contradicts it and give its number.
 
-5. Run `python3 <scripts>/review.py record <report.json> <verdicts.json>`. It stamps your verdicts and writes `review.json`. Fix any error it reports in your verdicts file and run it again.
+6. Run `python3 <scripts>/review.py record <report.json> <verdicts.json>`. It stamps your verdicts and writes `review.json`. Fix any error it reports in your verdicts file and run it again.
 
 ## Rules
 
