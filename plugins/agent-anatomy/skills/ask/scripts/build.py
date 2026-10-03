@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Validate an Agent Anatomy report, pull its code excerpts from the repositories, and render it.
 
-Usage: build.py <report.json> <output.html>
+Usage: build.py [--draft] <report.json> <output.html>
 
 The report never contains code. Each excerpt names a file and a line range;
 this script reads those lines from the cached repository at the pinned commit
 and embeds them, so the page cannot misquote the source.
+
+Every factual statement carries a [^id] marker tied to a citation: one claim
+and the lines that support it. The build checks each citation against the
+repository, and refuses to publish unless review.json (written by review.py
+from an independent reviewer's verdicts) marks every claim as supported.
+--draft skips the review requirement and stamps the page as unreviewed.
 """
 import html
 import json
@@ -26,6 +32,7 @@ VERDICTS = {"implements", "partial", "delegates", "absent"}
 KINDS = {"product", "framework", "unknown"}
 MAX_EXCERPT_LINES = 45
 MAX_EXCERPTS_PER_REPO = 5
+MAX_CITATION_LINES = 30
 DIAGRAM_KINDS = ("flowchart", "graph", "sequenceDiagram", "stateDiagram")
 BROWSERS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -37,6 +44,7 @@ BROWSERS = (
 
 sys.path.insert(0, HERE)
 from fetch import cache_path  # noqa: E402
+from review import MARKER, citation_hash, prose_fields, prose_hash  # noqa: E402
 
 
 def git(path, *args):
@@ -186,6 +194,74 @@ def check(report):
     if missing:
         errors.append(f"deep_dives: missing a section for {sorted(missing)}")
 
+    # ---- Citations: every factual statement points at lines that support it ----
+    cits = report.get("citations")
+    if not isinstance(cits, dict) or not cits:
+        errors.append("citations: required - an object of id -> {repo, path, start, end, expect, claim}")
+        cits = {}
+    for cid, c in cits.items():
+        w = f"citations.{cid}"
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", cid):
+            errors.append(f"{w}: ids use letters, digits, - and _ only")
+        claim = need(c, "claim", str, w)
+        if claim and len(claim) > 260:
+            errors.append(f"{w}.claim: keep the claim to one sentence (260 characters)")
+        entry = by_id.get(c.get("repo"))
+        if not entry:
+            errors.append(f"{w}.repo: unknown repo id")
+            continue
+        path, start, end = c.get("path"), c.get("start"), c.get("end")
+        if not (isinstance(path, str) and isinstance(start, int) and isinstance(end, int) and 1 <= start <= end):
+            errors.append(f"{w}: needs 'path' and line numbers 'start' <= 'end'")
+            continue
+        if end - start + 1 > MAX_CITATION_LINES:
+            errors.append(f"{w}: cites {end - start + 1} lines; cite the {MAX_CITATION_LINES} or fewer that carry the claim")
+        root = repo_dir(entry)
+        if not os.path.isdir(root):
+            continue
+        lines = read_lines(root, entry["commit"], path)
+        if lines is None:
+            errors.append(f"{w}.path: '{path}' does not exist at the pinned commit")
+        elif end > len(lines):
+            errors.append(f"{w}: file has {len(lines)} lines, range ends at {end}")
+        else:
+            expect = c.get("expect")
+            if not expect:
+                errors.append(f"{w}.expect: required - a short string that must appear in the cited lines")
+            elif expect not in "\n".join(lines[start - 1:end]):
+                errors.append(f"{w}.expect: '{expect}' is not within lines {start}-{end} of {path}")
+
+    used = set()
+    for where, text in prose_fields(report):
+        for m in MARKER.findall(text):
+            used.add(m)
+            if m not in cits:
+                errors.append(f"{where}: marker [^{m}] has no citation")
+    for cid in cits:
+        if cid not in used:
+            warnings.append(f"citations.{cid}: never referenced in the text")
+
+    def must_cite(where, text):
+        if text and not MARKER.search(text):
+            errors.append(f"{where}: states facts without a [^id] citation")
+
+    absent = {r.get("id") for r in repos if r.get("verdict") == "absent"}
+    for i, r in enumerate(repos):
+        if r.get("id") not in absent:
+            must_cite(f"repos[{i}].summary", r.get("summary"))
+    for i, row in enumerate(rows):
+        if row.get("repo") in absent:
+            continue
+        for j, cell in enumerate(row.get("cells") or []):
+            if cell.strip().lower() not in ("not applicable", "none", "none found", "n/a"):
+                must_cite(f"comparison.rows[{i}].cells[{j}]", cell)
+    for i, d in enumerate(dives):
+        if d.get("repo") in absent:
+            continue
+        for key in ("how_it_works", "gotchas"):
+            for j, text in enumerate(d.get(key) or []):
+                must_cite(f"deep_dives[{i}].{key}[{j}]", text)
+
     items = need(report, "build_your_own", list, "report") or []
     if not 3 <= len(items) <= 7:
         errors.append("build_your_own: 3 to 7 items")
@@ -195,6 +271,35 @@ def check(report):
     if len(repos) == 1 and diffs:
         errors.append("differences: leave out for a single-repository report")
     return errors, warnings
+
+
+def check_review(report, report_path):
+    """Return (errors, summary) for the independent review recorded beside the report."""
+    path = os.path.join(os.path.dirname(os.path.abspath(report_path)), "review.json")
+    if not os.path.exists(path):
+        return ["no review.json: run the reviewer pass (review.py packet, then review.py record), "
+                "or pass --draft to build an unreviewed page"], None
+    with open(path, encoding="utf-8") as f:
+        review = json.load(f)
+    errors = []
+    by_id = {r["id"]: r for r in report["repos"]}
+    results = {r.get("id"): r for r in review.get("results", [])}
+    for cid, c in (report.get("citations") or {}).items():
+        res = results.get(cid)
+        commit = by_id.get(c.get("repo"), {}).get("commit")
+        if not res:
+            errors.append(f"review: citation {cid} was not reviewed")
+        elif res.get("hash") != citation_hash(c, commit):
+            errors.append(f"review: citation {cid} changed after it was reviewed; review it again")
+        elif res.get("verdict") != "supported":
+            errors.append(f"review: citation {cid} is '{res.get('verdict')}': {res.get('note', '')[:200]}")
+    if review.get("prose_hash") != prose_hash(report):
+        errors.append("review: the text changed after the review; the reviewer must re-check it for uncited statements")
+    for u in review.get("uncited", []):
+        errors.append(f"review: uncited statement at {u.get('where')}: {str(u.get('text', ''))[:140]}")
+    summary = {"reviewer": review.get("reviewer", ""), "reviewed_at": review.get("reviewed_at", ""),
+               "claims": len(report.get("citations") or {})}
+    return errors, summary
 
 
 def embed(report):
@@ -211,10 +316,15 @@ def embed(report):
         for ex in d.get("excerpts") or []:
             ex["code"] = ex.pop("_code")
             ex["url"] = f"{base}{ex['path']}#L{ex['start']}-L{ex['end']}" if base else None
+    for c in (report.get("citations") or {}).values():
+        entry = by_id[c["repo"]]
+        c["url"] = (f"https://github.com/{entry['repo']}/blob/{entry['commit']}/{c['path']}#L{c['start']}-L{c['end']}"
+                    if entry.get("repo") else None)
+        c.pop("expect", None)
 
 
 def plain(text):
-    return str(text or "").replace("`", "")
+    return MARKER.sub("", str(text or "")).replace("`", "").replace("  ", " ").strip()
 
 
 def find_browser():
@@ -315,12 +425,18 @@ def head_tags(report, has_card):
 
 
 def main():
-    if len(sys.argv) != 3:
+    args = [a for a in sys.argv[1:] if a != "--draft"]
+    draft = "--draft" in sys.argv[1:]
+    if len(args) != 2:
         sys.exit(__doc__)
-    src, out = sys.argv[1], sys.argv[2]
+    src, out = args
     with open(src, encoding="utf-8") as f:
         report = json.load(f)
     errors, warnings = check(report)
+    review = None
+    if not errors and not draft:
+        review_errors, review = check_review(report, src)
+        errors += review_errors
     for w in warnings:
         print(f"warning: {w}", file=sys.stderr)
     if errors:
@@ -328,6 +444,7 @@ def main():
             print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
     embed(report)
+    report["review"] = review  # None on a draft build
 
     out_dir = os.path.dirname(os.path.abspath(out))
     os.makedirs(out_dir, exist_ok=True)
@@ -342,7 +459,8 @@ def main():
     with open(out, "w", encoding="utf-8") as f:
         f.write(page)
     n = sum(len(d.get("excerpts") or []) for d in report["deep_dives"])
-    print(f"wrote {out} ({len(page) // 1024} KB, {len(report['repos'])} repos, {n} verified excerpts)")
+    state = "DRAFT, not reviewed" if draft else f"{len(report.get('citations') or {})} claims reviewed"
+    print(f"wrote {out} ({len(page) // 1024} KB, {len(report['repos'])} repos, {n} verified excerpts, {state})")
     if card:
         print(f"wrote {card} ({CARD_SIZE[0]}x{CARD_SIZE[1]} share card)")
 

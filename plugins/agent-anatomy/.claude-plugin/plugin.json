@@ -1,6 +1,6 @@
 {
   "name": "agent-anatomy",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Ask how a specific agent technique is really implemented. /agent-anatomy:ask finds the code in production agent repositories (Gemini CLI, Codex, OpenHands, LangGraph and others), explains it with verified code excerpts, and compares the approaches in an HTML report.",
   "author": {
     "name": "Antriksh"

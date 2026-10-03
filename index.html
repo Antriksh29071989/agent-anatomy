@@ -126,7 +126,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
     <figure class="figure" style="margin:0">
       <h4>Who detects what</h4>
       <table>
-        <tr><td>Gemini CLI<span class="verdict ok">Built in</span></td><td>Three detectors: repeated tool-call cycles, repeated text, and a model acting as judge that a second model must confirm.</td></tr>
+        <tr><td>Gemini CLI<span class="verdict ok">Built in</span></td><td>Three detectors: repeated tool-call cycles, repeated text, and a model acting as judge, double-checked by a second model when one is available.</td></tr>
         <tr><td>OpenHands<span class="verdict ok">Built in</span></td><td>Five patterns over recent events, such as four identical action-and-result pairs.</td></tr>
         <tr><td>LangGraph<span class="verdict mid">Left to you</span></td><td>A step budget only. The default is 10,007 steps.</td></tr>
         <tr><td>Codex<span class="verdict none">Not found</span></td><td>No detector or step cap found in the core turn loop.</td></tr>
@@ -148,20 +148,21 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
       <p class="byline">Gemini CLI &middot; <b>5 verified excerpts</b></p>
       <h3><a href="reports/chat-compression/">How Gemini CLI compresses chat history</a></h3>
       <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
-      <p>It then asks the model to critique its own summary. If the result is not smaller than what it replaced, it is thrown away and later attempts only trim old tool output.</p>
+      <p>It then asks the model to critique its own summary. If the new history has more tokens than the old one, it is thrown away, and automatic attempts stop calling the summariser until a new chat starts.</p>
       <a class="more" href="reports/chat-compression/">Read the report &rarr;</a>
     </article>
     <article class="col">
       <p class="kicker">How it works</p>
       <p class="byline">The method</p>
       <h3>The code on the page cannot be misquoted</h3>
-      <p>The model never writes code into a report. It gives a file, a line range and a string it expects to find there.</p>
+      <p>The model never writes code into a report. It gives a file, a line range and a string it expects to find there. Every fact carries a citation to the lines behind it.</p>
       <ol class="steps">
         <li>Each repository is fetched and pinned to one commit.</li>
         <li>The implementation is found by search, then read and traced.</li>
         <li>A script copies the quoted lines from that commit, and fails the build if anything does not match.</li>
+        <li>A second agent tries to disprove each claim against the source. Nothing is published until every claim is supported.</li>
       </ol>
-      <p class="cap">The explanations are still an AI's reading of the code. Check them before relying on them.</p>
+      <p class="cap">The reviewer is a second AI pass, not a proof. Follow a citation before relying on a claim.</p>
     </article>
     <article class="col">
       <p class="kicker">Ask your own</p>

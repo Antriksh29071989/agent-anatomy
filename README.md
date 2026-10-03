@@ -68,11 +68,15 @@ Short excerpts with line numbers, each linked to the exact lines at a pinned com
 
 Then: where the approaches differ and why, and a "build your own" list. Each report also gets a 1200×630 share card and link-preview tags.
 
-## The code on the page cannot be misquoted
+## How a report earns trust
 
-The model never writes code into the report. It writes a file path, a line range, and a string it expects to find there. The build script reads those lines from the repository at the pinned commit and puts them on the page, and it fails if the commit, path, range or expected string does not match.
+**The code cannot be misquoted.** The model never writes code into the report. It writes a file path, a line range, and a string it expects to find there. The build script reads those lines from the repository at the pinned commit, and fails if the commit, path, range or expected string does not match.
 
-So an excerpt is always exactly what is in the repository. The *explanations* are still an AI's reading of that code: check them before relying on them.
+**Every fact is cited.** Each statement about the code carries a small numbered link to the exact lines that support it, and the page ends with an evidence list: every claim, and where to check it. The build rejects a report whose summaries, comparison cells or explanations state facts without a citation.
+
+**A second agent tries to disprove it.** Before a report can be built for publishing, a separate reviewer agent with a fresh context reads each claim next to the cited lines and marks it supported, partial, unsupported or unclear. It also flags factual sentences that have no citation. The build refuses to publish unless every claim is supported, and any later edit to a claim or to the text invalidates the review.
+
+What this does not do: the reviewer is another AI pass, not a proof. It catches claims that say more than the code shows; it can still miss things. Follow a citation before you rely on a claim.
 
 ## Topics it is built for
 
@@ -108,8 +112,9 @@ All are MIT or Apache-2.0 licensed ([registry](plugins/agent-anatomy/skills/ask/
 
 1. **Fetch.** [`fetch.py`](plugins/agent-anatomy/skills/ask/scripts/fetch.py) clones each repository at depth 1 into `~/.cache/agent-anatomy` and reports the pinned commit. The cache is reused across questions.
 2. **Find.** Claude searches by every name the technique goes by, reads the candidates, and traces the mechanism from trigger to effect.
-3. **Explain and compare.** It writes `report.json`: the answer, verdicts, comparison rows, deep dives, diagrams and excerpt line ranges ([schema](plugins/agent-anatomy/skills/ask/references/report-schema.md)).
-4. **Verify and render.** [`build.py`](plugins/agent-anatomy/skills/ask/scripts/build.py) checks every commit, path and line range, pulls the code, and fills the [template](plugins/agent-anatomy/skills/ask/assets/template.html).
+3. **Explain, compare and cite.** It writes `report.json`: the answer, verdicts, comparison rows, deep dives, diagrams, excerpt line ranges, and a citation for every fact ([schema](plugins/agent-anatomy/skills/ask/references/report-schema.md)).
+4. **Review.** The [`claim-reviewer`](plugins/agent-anatomy/agents/claim-reviewer.md) agent checks each claim against the source via [`review.py`](plugins/agent-anatomy/skills/ask/scripts/review.py) and records its verdicts.
+5. **Verify and render.** [`build.py`](plugins/agent-anatomy/skills/ask/scripts/build.py) checks every commit, path and line range, requires a passing review, pulls the code, and fills the [template](plugins/agent-anatomy/skills/ask/assets/template.html).
 
 ## Limits
 

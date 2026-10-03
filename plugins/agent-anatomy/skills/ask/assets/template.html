@@ -50,6 +50,19 @@ code { font: .82em var(--mono); background: var(--well); border: 1px solid var(-
 
 .kicker { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
 .kicker::before { content: "\2022\00a0"; }
+.reviewed { font: italic 14.5px/1.4 var(--display); color: var(--ok); margin: -4px 0 14px; }
+.reviewed::before { content: "\2713\00a0"; font-style: normal; }
+.reviewed.draft { color: var(--accent); }
+.reviewed.draft::before { content: "\26A0\00a0"; }
+sup.cite { font-size: .62em; line-height: 0; margin-left: 1px; }
+sup.cite a { font: 700 1em var(--mono); color: var(--accent); padding: 0 2px; border-radius: 2px; }
+sup.cite a:hover { background: var(--accent); color: var(--on-accent); }
+sup.cite.next::before { content: ","; color: var(--ink-faint); }
+ol.evidence { margin: 0; padding: 0 0 0 30px; border-top: 2px solid var(--rule); font-size: 15px; }
+ol.evidence li { padding: 9px 0; border-bottom: 1px solid var(--rule-hair); color: var(--ink-soft); }
+ol.evidence li::marker { font: 700 12px var(--mono); color: var(--accent); }
+ol.evidence a { font: 12px/1.5 var(--mono); color: var(--accent); overflow-wrap: anywhere; display: block; margin-top: 2px; }
+ol.evidence a:hover { text-decoration: underline; }
 .byline { font: 11.5px/1.5 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 12px; }
 h1 { font: 700 clamp(32px, 5.4vw, 48px)/1.1 var(--display); letter-spacing: -.018em; margin: 0 0 20px; text-wrap: balance; }
 h2 { font: 700 clamp(25px, 3.6vw, 32px)/1.18 var(--display); letter-spacing: -.012em; margin: 0 0 14px; }
@@ -138,11 +151,35 @@ footer .gen { font: italic 13.5px var(--display); }
   var app = document.getElementById("app");
 
   // Every string from the data reaches the page through text nodes only.
+  // Citations are numbered in the order they first appear on the page.
+  var citations = data.citations || {}, citeNumber = {}, citeOrder = [];
+  function citeRef(id) {
+    var c = citations[id];
+    if (!c) return document.createTextNode("");
+    if (!(id in citeNumber)) { citeOrder.push(id); citeNumber[id] = citeOrder.length; }
+    var a = document.createElement("a");
+    a.textContent = String(citeNumber[id]);
+    a.title = c.path + ":" + c.start + "-" + c.end;
+    var u = typeof c.url === "string" && c.url.indexOf("https://") === 0 ? c.url : null;
+    if (u) { a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; } else { a.href = "#evidence"; }
+    var sup = document.createElement("sup"); sup.className = "cite"; sup.appendChild(a);
+    return sup;
+  }
   function rich(text) {
     var frag = document.createDocumentFragment();
-    String(text == null ? "" : text).split("`").forEach(function (part, i) {
-      if (i % 2) { var c = document.createElement("code"); c.textContent = part; frag.appendChild(c); }
-      else if (part) frag.appendChild(document.createTextNode(part));
+    var afterCite = false;
+    String(text == null ? "" : text).split(/(`[^`]*`|\s?\[\^[A-Za-z0-9_-]+\])/).forEach(function (part) {
+      if (!part) return;
+      var m = /^\s?\[\^([A-Za-z0-9_-]+)\]$/.exec(part);
+      if (m) {
+        var ref = citeRef(m[1]);
+        if (afterCite && ref.className) ref.className += " next";
+        frag.appendChild(ref); afterCite = true; return;
+      }
+      afterCite = false;
+      if (part.length > 1 && part.charAt(0) === "`" && part.charAt(part.length - 1) === "`") {
+        var c = document.createElement("code"); c.textContent = part.slice(1, -1); frag.appendChild(c);
+      } else frag.appendChild(document.createTextNode(part));
     });
     return frag;
   }
@@ -181,11 +218,14 @@ footer .gen { font: italic 13.5px var(--display); }
   app.appendChild(h("div", { class: "topline" },
     h("a", { class: "brand", href: "../../" }, raw("Agent Anatomy")),
     h("a", { href: "../../" }, raw("\u2190 All reports"))));
-  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"], ["sources", "Sources"]]);
+  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"], ["evidence", "Evidence"], ["sources", "Sources"]]);
   app.appendChild(h("header", { class: "head" },
     h("p", { class: "kicker" }, raw(meta.title || "Report")),
     h("h1", null, meta.question || meta.title || ""),
     h("p", { class: "byline" }, raw((single ? "One codebase" : repos.length + " codebases compared") + " \u00b7 " + excerptCount + " verified code excerpts \u00b7 " + (meta.analysed_at || ""))),
+    data.review
+      ? h("p", { class: "reviewed" }, raw(data.review.claims + " claims, each tied to source lines and checked by an independent reviewer pass"))
+      : h("p", { class: "reviewed draft" }, raw("Draft: the claims on this page have not been independently reviewed")),
     h("p", { class: "answer" }, data.answer || ""),
     h("ul", { class: "repos" }, repos.map(function (r) {
       return h("li", null, h("a", { href: "#dive-" + r.id }, raw(repoName(r))),
@@ -264,6 +304,16 @@ footer .gen { font: italic 13.5px var(--display); }
   sec.appendChild(h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); })));
   sec.style.borderBottom = "0";
 
+  if (citeOrder.length) {
+    sec = section("evidence", "Evidence", "Every claim, and the lines behind it", data.review
+      ? "Each numbered statement was checked against the cited lines by a separate reviewer that did not write the report."
+      : "These citations were checked to exist, but the claims have not been independently reviewed.");
+    sec.appendChild(h("ol", { class: "evidence" }, citeOrder.map(function (id) {
+      var c = citations[id];
+      return h("li", null, h("span", null, c.claim), raw(" "), link(c.url, raw(c.path + ":" + c.start + "-" + c.end)));
+    })));
+  }
+
   var method = data.method || {};
   app.appendChild(h("footer", { id: "sources" }, h("div", null,
     h("strong", null, "Sources and limits"),
@@ -272,7 +322,10 @@ footer .gen { font: italic 13.5px var(--display); }
     })),
     method.scope ? h("p", null, method.scope) : null,
     h("ul", null, (method.limits || []).concat([
-      "Code excerpts are copied by script from the pinned commits and belong to their authors under the licences above. Explanations are an independent reading of that code, not statements by the maintainers, and these projects change quickly."
+      "Code excerpts are copied by script from the pinned commits and belong to their authors under the licences above. Explanations are an independent reading of that code, not statements by the maintainers, and these projects change quickly.",
+      data.review
+        ? "The reviewer pass is a second AI agent with no access to the author's reasoning. It reduces errors; it does not make the page infallible. Follow a citation before relying on a claim."
+        : "This is a draft build: no reviewer pass was recorded."
     ]).map(function (l) { return h("li", null, l); })),
     h("p", { class: "gen" }, "Generated with agent-anatomy, a Claude Code plugin."))));
 

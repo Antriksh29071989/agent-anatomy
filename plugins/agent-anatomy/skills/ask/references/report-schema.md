@@ -7,6 +7,7 @@
 - Plain text only; HTML is shown literally.
 - Backticks render as inline code. Use them for identifiers, file names and literal values.
 - No code in the report. Excerpts are line ranges; the build inserts the code.
+- A marker `[^id]` after a statement links it to `citations.id`. It renders as a small numbered link to the cited lines.
 
 ## Structure
 
@@ -20,7 +21,17 @@
     "hook": "The most striking contrast, as one line of at most 120 characters.",
     "site_url": "https://<user>.github.io/<repo>/reports/short-topic-name/"
   },
-  "answer": "The direct answer in two to four sentences, naming each repository's approach.",
+  "answer": "The direct answer in two to four sentences, with markers [^trigger] after each fact.",
+  "citations": {
+    "trigger": {
+      "repo": "gemini-cli",
+      "path": "path/in/repo.ts",
+      "start": 501,
+      "end": 507,
+      "expect": "isOverModelThreshold",
+      "claim": "One checkable fact, as a single sentence a reviewer can verify against these lines."
+    }
+  },
   "repos": [
     {
       "id": "gemini-cli",
@@ -102,6 +113,9 @@ For a local repository that is not on GitHub, give `"local_path": "/abs/path"` i
 | `excerpts[].expect` | Required; must appear in the range |
 | `excerpts[].code` | Not allowed |
 | `differences` | 2 to 6 when comparing; omit for a single repository |
+| `citations` | Required. Each needs `repo`, `path`, `start`, `end` (at most 30 lines), `expect` (must appear in the range) and `claim` (one sentence, at most 260 characters) |
+| Markers | Every `[^id]` must have a citation. Required in each repository `summary`, each comparison cell, and each `how_it_works` and `gotchas` item, except for repositories with an `absent` verdict |
+| `review.json` | Required for a final build: written by `review.py record` from the reviewer's verdicts. Every citation must be `supported`, the text must be unchanged since the review, and no uncited statements may be listed. `--draft` skips this and stamps the page as unreviewed |
 | `build_your_own` | 3 to 7 |
 
 ## Diagrams

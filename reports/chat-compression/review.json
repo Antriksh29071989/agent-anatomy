@@ -1,0 +1,266 @@
+{
+ "reviewer": "independent reviewer agent",
+ "reviewed_at": "2026-10-03",
+ "prose_hash": "d894841ed231d8fc",
+ "results": [
+  {
+   "id": "service",
+   "verdict": "supported",
+   "note": "",
+   "hash": "be31bc59ac2935f3"
+  },
+  {
+   "id": "callsite",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3ecd7f83cf8eb61c"
+  },
+  {
+   "id": "tokens",
+   "verdict": "supported",
+   "note": "",
+   "hash": "87e694556268a112"
+  },
+  {
+   "id": "trigger",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f85e32f8f483c43f"
+  },
+  {
+   "id": "threshold",
+   "verdict": "supported",
+   "note": "",
+   "hash": "690f5d5e03fb47ab"
+  },
+  {
+   "id": "setting",
+   "verdict": "supported",
+   "note": "",
+   "hash": "53efe80a066075e5"
+  },
+  {
+   "id": "forcecmd",
+   "verdict": "supported",
+   "note": "",
+   "hash": "dc9ac07994d5a4b9"
+  },
+  {
+   "id": "truncfirst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "820d0728cd00b59e"
+  },
+  {
+   "id": "budget",
+   "verdict": "supported",
+   "note": "",
+   "hash": "9b565f0c99727a15"
+  },
+  {
+   "id": "preserve",
+   "verdict": "supported",
+   "note": "",
+   "hash": "fc161794a673ae96"
+  },
+  {
+   "id": "splitcall",
+   "verdict": "supported",
+   "note": "",
+   "hash": "091d348de84f698f"
+  },
+  {
+   "id": "charcount",
+   "verdict": "supported",
+   "note": "",
+   "hash": "aa677e2111ee5552"
+  },
+  {
+   "id": "splitrule",
+   "verdict": "supported",
+   "note": "",
+   "hash": "bfa9f9d6e24afa9a"
+  },
+  {
+   "id": "splitall",
+   "verdict": "supported",
+   "note": "",
+   "hash": "8738be88ef7d64d4"
+  },
+  {
+   "id": "snapshot",
+   "verdict": "supported",
+   "note": "",
+   "hash": "dcb03133ff848ecb"
+  },
+  {
+   "id": "sections1",
+   "verdict": "supported",
+   "note": "",
+   "hash": "a8735b36aa56951b"
+  },
+  {
+   "id": "sections2",
+   "verdict": "supported",
+   "note": "",
+   "hash": "2ea04f76621bff8e"
+  },
+  {
+   "id": "verify",
+   "verdict": "supported",
+   "note": "",
+   "hash": "402b26e3146b7975"
+  },
+  {
+   "id": "final",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e4ca63026dd1cfa8"
+  },
+  {
+   "id": "empty",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3268d96f63019acb"
+  },
+  {
+   "id": "newhistory",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ef6ce4f4ebd54ba2"
+  },
+  {
+   "id": "inflated",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d11d3762ed21ccdd"
+  },
+  {
+   "id": "flag",
+   "verdict": "supported",
+   "note": "",
+   "hash": "02683c5dd5387d27"
+  },
+  {
+   "id": "trunconly",
+   "verdict": "supported",
+   "note": "",
+   "hash": "2c4f1ab72a2c9735"
+  },
+  {
+   "id": "newchat",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0b73381b9d117c1e"
+  },
+  {
+   "id": "hook",
+   "verdict": "supported",
+   "note": "",
+   "hash": "8b03509155c20cb5"
+  },
+  {
+   "id": "security",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1648e915bd8e2dca"
+  },
+  {
+   "id": "cmdefault",
+   "verdict": "supported",
+   "note": "",
+   "hash": "5b0321880dfc76ae"
+  },
+  {
+   "id": "cmenabled",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e17c3b29210a9452"
+  },
+  {
+   "id": "earlyreturn",
+   "verdict": "supported",
+   "note": "",
+   "hash": "de4b410df702e42c"
+  },
+  {
+   "id": "cmif",
+   "verdict": "supported",
+   "note": "",
+   "hash": "19153f4347a0fd8f"
+  },
+  {
+   "id": "cmfallback",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e264c1bcf20bed97"
+  },
+  {
+   "id": "cmswitch",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c7ca04cce186bcff"
+  },
+  {
+   "id": "walk",
+   "verdict": "supported",
+   "note": "",
+   "hash": "627975622219b9c1"
+  },
+  {
+   "id": "overbudget",
+   "verdict": "supported",
+   "note": "",
+   "hash": "912dc72629163f66"
+  },
+  {
+   "id": "inbudget",
+   "verdict": "supported",
+   "note": "",
+   "hash": "fe689107ca0d5d4a"
+  },
+  {
+   "id": "truncfmt",
+   "verdict": "supported",
+   "note": "",
+   "hash": "231f38a80da4487a"
+  },
+  {
+   "id": "truncthreshold",
+   "verdict": "supported",
+   "note": "",
+   "hash": "73c845b67631b008"
+  },
+  {
+   "id": "doccomment",
+   "verdict": "supported",
+   "note": "",
+   "hash": "834d504d8b5dd15b"
+  },
+  {
+   "id": "reset",
+   "verdict": "supported",
+   "note": "",
+   "hash": "db9031cc297078c7"
+  },
+  {
+   "id": "truncnoop",
+   "verdict": "supported",
+   "note": "",
+   "hash": "4de7d717f796017f"
+  },
+  {
+   "id": "newcount",
+   "verdict": "supported",
+   "note": "",
+   "hash": "cfde7658ecc3172c"
+  },
+  {
+   "id": "taskstate",
+   "verdict": "supported",
+   "note": "",
+   "hash": "abbdb68a6f6e1e53"
+  }
+ ],
+ "uncited": []
+}
