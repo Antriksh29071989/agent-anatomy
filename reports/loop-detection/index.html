@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loop detection - Agent Anatomy</title>
+<meta name="description" content="Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Loop detection - Agent Anatomy">
+<meta property="og:description" content="Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.">
+<meta name="twitter:title" content="Loop detection - Agent Anatomy">
+<meta name="twitter:description" content="Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.">
+<meta property="og:url" content="https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/">
+<meta property="og:image" content="https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Loop detection - Agent Anatomy: Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/card.png">
+<style>
+:root {
+  --bg: #f5f3ee; --surface: #ffffff; --surface-2: #faf9f6; --ink: #151a22; --muted: #5a6473;
+  --line: #e0dcd2; --accent: #0a66c2; --accent-soft: #e4effa; --accent-ink: #084f96;
+  --hero: #0a1120; --hero-2: #101b33; --hero-ink: #eaf1fb; --hero-muted: #93a5c1; --hero-line: rgba(120,160,220,.16);
+  --ok: #17794a; --ok-soft: #e2f3ea; --warn: #9a5a00; --warn-soft: #fbefd9; --spec: #6b4fd0; --spec-soft: #ece7fb;
+  --none: #6b7280; --none-soft: #eceef1;
+  --code-bg: #0f1726; --code-ink: #dbe6f5; --code-num: #5f7191; --code-line: #1e2a40;
+  --d-person: #0b3d75; --d-system: #0a66c2; --d-component: #5aa2e6; --d-ext: #7c8696; --d-store: #17794a; --d-queue: #9a5a00;
+  --d-on: #ffffff; --d-on-light: #0a1120; --d-line: #6b7686; --d-group: #f0ede6; --d-group-line: #b9b3a5;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c111b; --surface: #131a27; --surface-2: #171f2e; --ink: #e6ecf5; --muted: #98a4b7;
+    --line: #253044; --accent: #6db3ff; --accent-soft: #15273f; --accent-ink: #9bcbff;
+    --hero: #070c17; --hero-2: #0e172b;
+    --ok: #5fd39a; --ok-soft: #12301f; --warn: #f0b458; --warn-soft: #33260e; --spec: #b3a1ff; --spec-soft: #241d44;
+    --none: #a3acba; --none-soft: #222a38;
+    --code-bg: #0a101c; --code-line: #1a2538;
+    --d-person: #9bcbff; --d-system: #3d8fe6; --d-component: #1f4f86; --d-ext: #4a5568; --d-store: #2a9d68; --d-queue: #c98a2b;
+    --d-line: #8b98ad; --d-group: #172133; --d-group-line: #3a4860;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font: .86em var(--mono); background: var(--accent-soft); color: var(--accent-ink); padding: .1em .38em; border-radius: 4px; overflow-wrap: anywhere; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+.hero { background:
+    linear-gradient(var(--hero-line) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px) 0 0 / 32px 100%,
+    radial-gradient(1200px 500px at 15% -10%, #17366b 0%, transparent 60%),
+    linear-gradient(180deg, var(--hero) 0%, var(--hero-2) 100%);
+  color: var(--hero-ink); padding: 56px 0 44px; }
+.kicker { font: 600 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: #7fb7ff; margin: 0 0 18px; }
+.hero h1 { font-size: clamp(30px, 5vw, 50px); line-height: 1.1; letter-spacing: -.025em; margin: 0 0 20px; font-weight: 700; max-width: 20em; text-wrap: balance; }
+.answer { font-size: 18px; max-width: 50em; margin: 0 0 28px; padding-left: 16px; border-left: 3px solid #4d9bf0; }
+.answer code { background: rgba(120,170,240,.16); color: #cfe3ff; }
+.repos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: var(--hero-line); border: 1px solid var(--hero-line); border-radius: 10px; overflow: hidden; }
+.repo { background: rgba(10,17,32,.72); padding: 14px 16px; color: inherit; display: block; }
+.repo:hover { text-decoration: none; background: rgba(20,32,58,.8); }
+.repo b { display: block; font: 600 19px/1.25 var(--sans); }
+.repo span { font: 11px/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hero-muted); display: block; }
+.meta { margin-top: 18px; font: 12px/1.6 var(--mono); color: var(--hero-muted); }
+
+nav { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; gap: 20px; overflow-x: auto; padding-top: 11px; padding-bottom: 11px; scrollbar-width: none; }
+nav a { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+
+section { padding: 50px 0 6px; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.02em; line-height: 1.15; margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 0 0 22px; max-width: 48em; }
+.num { font: 600 12px/1 var(--mono); letter-spacing: .14em; color: var(--accent); display: block; margin-bottom: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 8px; letter-spacing: -.01em; }
+h4 { font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 26px 0 12px; }
+p { margin: 0 0 12px; }
+.tag { display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 5px; background: var(--accent-soft); color: var(--accent-ink); white-space: nowrap; }
+.tag.implements { background: var(--ok-soft); color: var(--ok); }
+.tag.partial { background: var(--warn-soft); color: var(--warn); }
+.tag.delegates { background: var(--spec-soft); color: var(--spec); }
+.tag.absent { background: var(--none-soft); color: var(--none); }
+.tag.plain { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+
+.tablewrap { overflow-x: auto; padding: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th { text-align: left; font: 600 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 14px 16px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; min-width: 130px; }
+tr:last-child td { border-bottom: 0; }
+td.who { font-weight: 600; white-space: nowrap; min-width: 0; }
+td.who .tag { margin-top: 6px; display: inline-block; }
+.parts td:first-child { font: 600 13px/1.5 var(--mono); white-space: nowrap; }
+.parts td.path { font: 12.5px/1.5 var(--mono); overflow-wrap: anywhere; }
+
+.dive > header { margin-bottom: 14px; }
+.dive > header h3 { font-size: 22px; letter-spacing: -.015em; }
+.dive .lead { font-size: 17px; color: var(--ink); }
+.canvas { padding: 20px 12px; overflow-x: auto; text-align: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; }
+.canvas svg { max-width: 100%; height: auto; }
+.canvas svg .edgeLabel, .canvas svg .edgeLabel p, .canvas svg .edgeLabel span { color: var(--ink) !important; fill: var(--ink) !important; background-color: var(--surface-2) !important; font-size: 12.5px; }
+.canvas svg .cluster-label, .canvas svg .cluster-label p, .canvas svg .cluster-label span { color: var(--muted) !important; fill: var(--muted) !important; }
+.canvas pre { text-align: left; font: 12.5px/1.5 var(--mono); color: var(--muted); margin: 0; white-space: pre-wrap; }
+.note { font: 12.5px/1.5 var(--mono); color: var(--warn); margin: 0 0 10px; text-align: left; }
+.caption { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+
+.excerpt { border: 1px solid var(--code-line); border-radius: 10px; overflow: hidden; margin: 0 0 18px; background: var(--code-bg); }
+.excerpt header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--code-line); }
+.excerpt header b { color: #f1f6fd; font-size: 14.5px; }
+.excerpt header a, .excerpt header span { font: 12px/1.4 var(--mono); color: #8fbdf5; overflow-wrap: anywhere; }
+.excerpt pre { margin: 0; padding: 12px 0; overflow-x: auto; font: 12.5px/1.6 var(--mono); color: var(--code-ink); tab-size: 2; }
+.excerpt .ln { display: block; padding: 0 16px 0 0; white-space: pre; }
+.excerpt .ln::before { content: attr(data-n); display: inline-block; width: 52px; padding-right: 14px; text-align: right; color: var(--code-num); user-select: none; }
+.excerpt p { margin: 0; padding: 11px 14px; border-top: 1px solid var(--code-line); color: #b9c8de; font-size: 14.5px; }
+.excerpt p code { background: rgba(120,170,240,.16); color: #cfe3ff; }
+ul.plain { margin: 0 0 12px; padding-left: 20px; }
+ul.plain li { margin-bottom: 6px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid .card { margin: 0; }
+.grid .card p { color: var(--muted); margin: 0; }
+.steps { counter-reset: t; list-style: none; padding: 0; margin: 0; }
+.steps li { counter-increment: t; position: relative; padding: 14px 0 14px 46px; border-bottom: 1px solid var(--line); font-size: 17px; }
+.steps li:last-child { border-bottom: 0; }
+.steps li::before { content: counter(t, decimal-leading-zero); position: absolute; left: 0; top: 17px; font: 600 13px var(--mono); color: var(--accent); }
+footer { margin-top: 56px; padding: 28px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; }
+footer ul { padding-left: 18px; margin: 8px 0 14px; }
+footer .gen { font: 12px var(--mono); }
+@media print { nav { display: none; } .card, .excerpt { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="aa-data">{"meta": {"question": "How do production agents detect that they are stuck in a loop, and what do they do about it?", "title": "Loop detection", "slug": "loop-detection", "analysed_at": "2026-10-03", "hook": "Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.", "site_url": "https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/"}, "answer": "There is no single technique. Gemini CLI runs three detectors at once: hashed tool-call cycles, repeated text, and a periodic model-based check that a second model must confirm. OpenHands matches five patterns over the recent event history. Both warn the model once before stopping it. LangGraph has no behavioural detection, only a step budget, and no loop detector was found in Codex.", "repos": [{"id": "gemini-cli", "repo": "google-gemini/gemini-cli", "commit": "fb972b2f87fe7d5b06d37eac711490162d98de2c", "commit_date": "2026-10-02", "kind": "product", "language": "TypeScript", "license": "Apache-2.0", "what": "Google's terminal coding agent", "verdict": "implements", "summary": "A dedicated `LoopDetectionService` with three independent detectors, a one-time recovery message, and a hard stop on the second detection.", "url": "https://github.com/google-gemini/gemini-cli"}, {"id": "openhands", "repo": "OpenHands/software-agent-sdk", "commit": "1b2b5c850b6a99d8b742bfe20d198d6167165ca2", "commit_date": "2026-10-03", "kind": "product", "language": "Python", "license": "MIT", "what": "The agent SDK and server behind OpenHands (the OpenHands/OpenHands repository is now the UI)", "verdict": "implements", "summary": "A `StuckDetector` that compares recent actions and observations against five stuck patterns, nudges the model on repeated errors, and otherwise marks the conversation `STUCK`.", "url": "https://github.com/OpenHands/software-agent-sdk"}, {"id": "langgraph", "repo": "langchain-ai/langgraph", "commit": "9a0394d88b2211f299dcd69df92db3480c69ee61", "commit_date": "2026-10-03", "kind": "framework", "language": "Python", "license": "MIT", "what": "Graph-based agent orchestration framework", "verdict": "delegates", "summary": "The runtime does not look at behaviour. It counts steps and raises `GraphRecursionError` at the limit; recognising an unproductive loop is left to the graph you write.", "url": "https://github.com/langchain-ai/langgraph"}, {"id": "codex", "repo": "openai/codex", "commit": "b172810921f89847cd310ecc496f9c901760e933", "commit_date": "2026-10-03", "kind": "product", "language": "Rust", "license": "Apache-2.0", "what": "OpenAI's terminal coding agent", "verdict": "absent", "summary": "No loop detector or step cap was found in the core turn loop at this commit. A turn continues until the model stops asking for follow-up work or the user cancels.", "url": "https://github.com/openai/codex"}], "comparison": {"dimensions": ["Approach", "What it watches", "Thresholds", "First response", "Hard stop"], "rows": [{"repo": "gemini-cli", "cells": ["Three detectors in one service: exact tool-call cycles, repeated text, and a model acting as judge", "A hash of each tool call's name and arguments; 50-character chunks of streamed text; the last 20 turns", "A cycle of length 1 to 5 repeated 5 times; a chunk repeated 10 times close together; judge starts after 30 turns and needs confidence of 0.9 or more", "Injects a `Potential loop detected` message and lets the model continue", "A second detection ends the turn with a `LoopDetected` event. Separate cap of 100 turns per prompt"]}, {"repo": "openhands", "cells": ["Rule-based pattern matching over recent events", "Actions, observations, errors and agent messages since the last user message", "4 identical action and observation pairs; 3 identical action and error pairs; 3 agent messages in a row; 6 for an alternating pattern", "On the third identical error, a nudge naming the tool and the error", "Status set to `STUCK` and the run loop stops. Separate cap of 500 iterations per run"]}, {"repo": "langgraph", "cells": ["A step budget, no behavioural detection", "The number of steps the graph has executed", "`recursion_limit`, default 10007, configurable per run or by environment variable", "The prebuilt ReAct agent answers `Sorry, need more steps to process this request.` when fewer than 2 steps remain", "`GraphRecursionError` when the step count passes the limit"]}, {"repo": "codex", "cells": ["None found", "Not applicable", "Not applicable", "Not applicable", "The turn loop exits when the model needs no follow-up, or on cancellation"]}]}, "deep_dives": [{"repo": "gemini-cli", "headline": "Three detectors, one warning, then a stop", "how_it_works": ["Every stream event passes through `LoopDetectionService.addAndCheck`. For tool calls it hashes the tool name plus its JSON arguments with SHA-256 and appends the hash to a short history. It then looks for a repeating cycle: any pattern of length 1 to 5 that has repeated 5 times in a row. That catches `A A A A A` and also `A B A B A B A B A B`.", "For model text, it slides over the stream in 50-character chunks, hashes each one, and flags a loop when the same chunk appears 10 times within a short distance. Tracking is switched off inside code blocks, where repetition is normal.", "Neither catches an agent that keeps doing slightly different unproductive things. So once a single prompt has run for 30 turns, the service periodically sends the last 20 turns to a model with a diagnostic prompt and asks for a confidence score. At 0.9 or above, a second model alias has to agree before a loop is declared. The interval between checks adapts between 5 and 15 turns: the more suspicious the last result, the sooner the next check.", "The response is graduated. On the first detection `GeminiClient` clears the flag, injects a system-style message telling the model a loop was detected, and continues. On the second detection it emits `LoopDetected` and ends the turn."], "diagram": {"caption": "The first detection becomes a message to the model; only the second one stops it.", "mermaid": "flowchart TB\n  ev[\"Stream event\"]:::external --> svc[\"LoopDetectionService<br/>addAndCheck\"]:::system\n  svc -->|\"tool call\"| tc[\"Hash name and args<br/>look for a repeated cycle\"]:::component\n  svc -->|\"text\"| ct[\"Hash 50-char chunks<br/>count close repeats\"]:::component\n  ts[\"Turn start<br/>after 30 turns\"]:::external --> llm[\"Model judge<br/>second model must confirm\"]:::component\n  tc --> hit[\"Loop detected<br/>count goes up\"]:::queue\n  ct --> hit\n  llm --> hit\n  hit -->|\"first time\"| rec[\"Inject warning message<br/>continue the turn\"]:::component\n  hit -->|\"second time\"| stop[\"LoopDetected event<br/>turn ends\"]:::store\n"}, "key_parts": [{"name": "LoopDetectionService", "path": "packages/core/src/services/loopDetectionService.ts", "role": "All three detectors, their thresholds and state", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/loopDetectionService.ts"}, {"name": "GeminiClient", "path": "packages/core/src/core/client.ts", "role": "Calls the detector on each turn and event, and decides between recovery and stopping", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/core/client.ts"}, {"name": "LoopType", "path": "packages/core/src/telemetry/types.ts", "role": "Names the three kinds of loop for telemetry", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/telemetry/types.ts"}], "excerpts": [{"path": "packages/core/src/services/loopDetectionService.ts", "start": 29, "end": 66, "expect": "TOOL_CALL_LOOP_THRESHOLD = 5", "title": "The thresholds", "note": "Every number that decides when a loop is declared, in one place.", "code": "const TOOL_CALL_LOOP_THRESHOLD = 5;\nconst CONTENT_LOOP_THRESHOLD = 10;\nconst CONTENT_CHUNK_SIZE = 50;\nconst MAX_HISTORY_LENGTH = 5000;\n\n/**\n * The number of recent conversation turns to include in the history when asking the LLM to check for a loop.\n */\nconst LLM_LOOP_CHECK_HISTORY_COUNT = 20;\n\n/**\n * The number of turns that must pass in a single prompt before the LLM-based loop check is activated.\n */\nconst LLM_CHECK_AFTER_TURNS = 30;\n\n/**\n * The default interval, in number of turns, at which the LLM-based loop check is performed.\n * This value is adjusted dynamically based on the LLM's confidence.\n */\nconst DEFAULT_LLM_CHECK_INTERVAL = 10;\n\n/**\n * The minimum interval for LLM-based loop checks.\n * This is used when the confidence of a loop is high, to check more frequently.\n */\nconst MIN_LLM_CHECK_INTERVAL = 5;\n\n/**\n * The maximum interval for LLM-based loop checks.\n * This is used when the confidence of a loop is low, to check less frequently.\n */\nconst MAX_LLM_CHECK_INTERVAL = 15;\n\n/**\n * The confidence threshold above which the LLM is considered to have detected a loop.\n */\nconst LLM_CONFIDENCE_THRESHOLD = 0.9;\nconst DOUBLE_CHECK_MODEL_ALIAS = 'loop-detection-double-check';", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/loopDetectionService.ts#L29-L66"}, {"path": "packages/core/src/services/loopDetectionService.ts", "start": 313, "end": 349, "expect": "checkToolCallLoop", "title": "Detecting repeated tool calls, including cycles", "note": "`k` is the cycle length. For each `k` from 1 to 5 it checks whether the last `k` calls have repeated 5 times.", "code": "  private checkToolCallLoop(toolCall: { name: string; args: object }): boolean {\n    const key = this.getToolCallKey(toolCall);\n    this.toolCallHistory.push(key);\n\n    const maxRequiredLength = 5 * TOOL_CALL_LOOP_THRESHOLD;\n    if (this.toolCallHistory.length > maxRequiredLength) {\n      this.toolCallHistory = this.toolCallHistory.slice(-maxRequiredLength);\n    }\n\n    const n = this.toolCallHistory.length;\n    const R = TOOL_CALL_LOOP_THRESHOLD; // 5\n\n    // Check for repeating patterns of cycle length k from 1 to 5\n    for (let k = 1; k <= 5; k++) {\n      const requiredLength = k * R;\n      if (n >= requiredLength) {\n        const cycle = this.toolCallHistory.slice(-k);\n        let isPatternMatch = true;\n\n        for (let i = 0; i < requiredLength; i++) {\n          const indexFromEnd = requiredLength - i;\n          const actualKey = this.toolCallHistory[n - indexFromEnd];\n          const expectedKey = cycle[i % k];\n          if (actualKey !== expectedKey) {\n            isPatternMatch = false;\n            break;\n          }\n        }\n\n        if (isPatternMatch) {\n          return true;\n        }\n      }\n    }\n\n    return false;\n  }", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/loopDetectionService.ts#L313-L349"}, {"path": "packages/core/src/services/loopDetectionService.ts", "start": 275, "end": 309, "expect": "LLM_CHECK_AFTER_TURNS", "title": "The model-based check", "note": "Runs at the start of a turn, only after 30 turns in the same prompt, and only every `llmCheckInterval` turns.", "code": "    this.turnsInCurrentPrompt++;\n\n    if (\n      this.turnsInCurrentPrompt >= LLM_CHECK_AFTER_TURNS &&\n      this.turnsInCurrentPrompt - this.lastCheckTurn >= this.llmCheckInterval\n    ) {\n      this.lastCheckTurn = this.turnsInCurrentPrompt;\n      const { isLoop, analysis, confirmedByModel } =\n        await this.checkForLoopWithLLM(signal);\n      if (isLoop) {\n        this.loopDetected = true;\n        this.detectedCount++;\n        this.lastLoopDetail = analysis;\n        this.lastLoopType = LoopType.LLM_DETECTED_LOOP;\n\n        logLoopDetected(\n          this.context.config,\n          new LoopDetectedEvent(\n            this.lastLoopType,\n            this.promptId,\n            this.detectedCount,\n            confirmedByModel,\n            analysis,\n            LLM_CONFIDENCE_THRESHOLD,\n          ),\n        );\n\n        return {\n          count: this.detectedCount,\n          type: this.lastLoopType,\n          detail: this.lastLoopDetail,\n          confirmedByModel,\n        };\n      }\n    }", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/loopDetectionService.ts#L275-L309"}, {"path": "packages/core/src/core/client.ts", "start": 1284, "end": 1312, "expect": "_recoverFromLoop", "title": "First detection: tell the model, then carry on", "note": "The warning is sent as a new message and the turn budget is reduced by one.", "code": "  private _recoverFromLoop(\n    loopResult: { detail?: string },\n    signal: AbortSignal,\n    prompt_id: string,\n    boundedTurns: number,\n    displayContent?: PartListUnion,\n  ): AsyncGenerator<ServerGeminiStreamEvent, Turn> {\n    // Clear the detection flag so the recursive turn can proceed, but the count remains 1.\n    this.loopDetector.clearDetection();\n\n    const feedbackText = `System: Potential loop detected. Details: ${loopResult.detail || 'Repetitive patterns identified'}. Please take a step back and confirm you're making forward progress. If not, take a step back, analyze your previous actions and rethink how you're approaching the problem. Avoid repeating the same tool calls or responses without new results.`;\n\n    if (this.config.getDebugMode()) {\n      debugLogger.warn(\n        'Iterative Loop Recovery: Injecting feedback message to model.',\n      );\n    }\n\n    const feedback = [{ text: feedbackText }];\n\n    // Recursive call with feedback\n    return this.sendMessageStream(\n      feedback,\n      signal,\n      prompt_id,\n      boundedTurns - 1,\n      displayContent,\n    );\n  }", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/core/client.ts#L1284-L1312"}], "gotchas": ["Exact-match hashing means a tool call with one changed argument counts as a different call. The model-based check exists to cover that gap.", "The model-based check costs extra model calls, which is why it waits 30 turns and backs off when confidence is low.", "Loop detection can be disabled by configuration or for the rest of a session."]}, {"repo": "openhands", "headline": "Five named patterns over the last few events", "how_it_works": ["`StuckDetector.is_stuck` looks only at events since the last user message, so a new instruction resets the picture. It collects the most recent actions and observations and tests five scenarios in order.", "The scenarios are: the same action producing the same observation 4 times; the same action producing an error more than 3 times; the agent sending 3 messages in a row with no action; a two-step alternating pattern over 6 events; and a loop of context-window errors.", "Repeated errors get special treatment. When an action has failed with the same error exactly 3 times, `get_action_error_nudge` returns a message naming the tool and the error, which the conversation injects as a user-role message. The nudge fires once per streak. If the streak continues past the threshold, the conversation is marked stuck.", "When a pattern matches, the run loop sets the execution status to `STUCK` and stops. Thresholds are a small config object that callers can override, and detection can be turned off when creating the conversation."], "diagram": {"caption": "Repeated errors earn one nudge before the stop; the other patterns stop immediately.", "mermaid": "flowchart TB\n  loop[\"Run loop iteration\"]:::external --> chk[\"_check_stuck_or_nudge\"]:::system\n  chk --> nudge{\"Same error<br/>exactly 3 times?\"}:::component\n  nudge -->|\"yes, first time\"| msg[\"Inject nudge message<br/>naming tool and error\"]:::component\n  nudge -->|\"no\"| det[\"StuckDetector.is_stuck\"]:::system\n  det --> p1[\"Same action, same result\"]:::component\n  det --> p2[\"Same action, same error\"]:::component\n  det --> p3[\"Monologue\"]:::component\n  det --> p4[\"Alternating pair\"]:::component\n  det --> p5[\"Context window errors\"]:::component\n  p1 --> stuck[\"Status STUCK<br/>run stops\"]:::store\n  p2 --> stuck\n  p3 --> stuck\n  p4 --> stuck\n  p5 --> stuck\n"}, "key_parts": [{"name": "StuckDetector", "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py", "role": "The five pattern checks and the error nudge", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/stuck_detector.py"}, {"name": "StuckDetectionThresholds", "path": "openhands-sdk/openhands/sdk/conversation/types.py", "role": "Configurable thresholds for each pattern", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/types.py"}, {"name": "_check_stuck_or_nudge", "path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py", "role": "Called from the run loop; injects the nudge or sets the status", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py"}, {"name": "ConversationExecutionStatus.STUCK", "path": "openhands-sdk/openhands/sdk/conversation/state.py", "role": "A terminal status alongside finished and error", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/state.py"}], "excerpts": [{"path": "openhands-sdk/openhands/sdk/conversation/types.py", "start": 150, "end": 161, "expect": "default=4", "title": "The thresholds", "note": "Four numbers, each overridable.", "code": "    action_observation: int = Field(\n        default=4, ge=1, description=\"Threshold for action-observation loop detection\"\n    )\n    action_error: int = Field(\n        default=3, ge=1, description=\"Threshold for action-error loop detection\"\n    )\n    monologue: int = Field(\n        default=3, ge=1, description=\"Threshold for agent monologue detection\"\n    )\n    alternating_pattern: int = Field(\n        default=6, ge=1, description=\"Threshold for alternating pattern detection\"\n    )", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/types.py#L150-L161"}, {"path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py", "start": 121, "end": 153, "expect": "scenario 5", "title": "The five scenarios, in order", "note": "Each scenario is a small method; the first match wins.", "code": "\n        # action_error needs one extra pair to tell a fresh streak from one\n        # that already continued past the nudge (see get_action_error_nudge)\n        max_needed = max(\n            self.action_observation_threshold, self.action_error_threshold + 1\n        )\n        last_actions, last_observations = self._collect_actions_and_observations(\n            events, max_needed\n        )\n\n        # Check all stuck patterns\n        # scenario 1: same action, same observation\n        if self._is_stuck_repeating_action_observation(last_actions, last_observations):\n            return True\n\n        # scenario 2: same action, errors\n        if self._is_stuck_repeating_action_error(last_actions, last_observations):\n            return True\n\n        # scenario 3: monologue\n        if self._is_stuck_monologue(events):\n            return True\n\n        # scenario 4: action, observation alternating pattern\n        if len(events) >= self.alternating_pattern_threshold:\n            if self._is_stuck_alternating_action_observation(events):\n                return True\n\n        # scenario 5: context window error loop\n        if len(events) >= 10:\n            if self._is_stuck_context_window_error(events):\n                return True\n", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/stuck_detector.py#L121-L153"}, {"path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py", "start": 156, "end": 183, "expect": "_is_stuck_repeating_action_observation", "title": "Same action, same observation", "note": "Both the actions and the observations must match, so a call that returns something new each time is not a loop.", "code": "    def _is_stuck_repeating_action_observation(\n        self, last_actions: list[Event], last_observations: list[Event]\n    ) -> bool:\n        # scenario 1: same action, same observation\n        threshold = self.action_observation_threshold\n\n        # Check for a loop of identical action-observation pairs\n        if len(last_actions) >= threshold and len(last_observations) >= threshold:\n            logger.debug(\n                f\"Found {len(last_actions)} actions and \"\n                f\"{len(last_observations)} observations, checking for equality\"\n            )\n            actions_equal = all(\n                self._event_eq(last_actions[0], action)\n                for action in last_actions[:threshold]\n            )\n            observations_equal = all(\n                self._event_eq(last_observations[0], observation)\n                for observation in last_observations[:threshold]\n            )\n            logger.debug(\n                f\"Actions equal: {actions_equal}, \"\n                f\"Observations equal: {observations_equal}\"\n            )\n\n            if actions_equal and observations_equal:\n                logger.warning(\"Action, Observation loop detected\")\n                return True", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/stuck_detector.py#L156-L183"}, {"path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py", "start": 218, "end": 248, "expect": "get_action_error_nudge", "title": "The nudge on repeated errors", "note": "It fires only when the streak equals the threshold exactly, and remembers the error event so it never fires twice for the same one.", "code": "    def get_action_error_nudge(self) -> str | None:\n        \"\"\"Nudge text once an action-error streak first hits the threshold.\n\n        Nudges once per streak: if the streak is still frozen on the same\n        error event (e.g. an empty/reasoning-only response added no new\n        action) we've already nudged for it, so we don't re-fire.\n        \"\"\"\n        events = self._events_since_last_user_message()\n        threshold = self.action_error_threshold\n        last_actions, last_observations = self._collect_actions_and_observations(\n            events, threshold + 1\n        )\n        if self._action_error_streak(last_actions, last_observations) != threshold:\n            return None\n\n        action = last_actions[0]\n        error = last_observations[0]\n        assert isinstance(action, ActionEvent)\n        assert isinstance(error, AgentErrorEvent)\n\n        if error.id == self._last_nudged_error_event_id:\n            return None\n        self._last_nudged_error_event_id = error.id\n\n        return (\n            f\"You've called `{action.tool_name}` with the same arguments \"\n            f\"{threshold} times in a row and gotten the same error each \"\n            f\"time: {error.error}. Repeating the exact same call again \"\n            \"will not work — review the error message and either correct \"\n            \"the arguments or try a different approach.\"\n        )", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/stuck_detector.py#L218-L248"}, {"path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py", "start": 744, "end": 767, "expect": "_check_stuck_or_nudge", "title": "How the run loop uses it", "note": "Nudge first; only if no nudge is due does it test for a stuck state.", "code": "    def _check_stuck_or_nudge(self) -> bool:\n        \"\"\"Nudge once on a repeating action-error streak, else apply is_stuck().\n\n        Returns True if STUCK was set and the run loop should stop.\n        \"\"\"\n        if not self._stuck_detector:\n            return False\n\n        nudge = self._stuck_detector.get_action_error_nudge()\n        if nudge is not None:\n            self._on_event(\n                MessageEvent(\n                    source=\"environment\",\n                    llm_message=Message(role=\"user\", content=[TextContent(text=nudge)]),\n                )\n            )\n            return False\n\n        if self._stuck_detector.is_stuck():\n            logger.warning(\"Stuck pattern detected.\")\n            self._state.execution_status = ConversationExecutionStatus.STUCK\n            return True\n\n        return False", "url": "https://github.com/OpenHands/software-agent-sdk/blob/1b2b5c850b6a99d8b742bfe20d198d6167165ca2/openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py#L744-L767"}], "gotchas": ["Only the most recent events are scanned (a constant caps it at 20), so a loop with a long period can go unnoticed.", "There is no model-based check, so a semantically repetitive agent that varies its arguments is not detected."]}, {"repo": "langgraph", "headline": "A step counter, and the rest is up to you", "how_it_works": ["LangGraph runs a graph in steps. When a run starts, the loop computes a stop point: the current step plus `recursion_limit`. On each tick it checks whether the step has passed that point and, if so, sets its status to `out_of_steps`.", "The caller then raises `GraphRecursionError`, with a message suggesting a higher limit. The default limit is read from an environment variable and is 10007 at this commit.", "The prebuilt ReAct agent adds one courtesy on top. It tracks remaining steps in its state, and if the model asks for more tool calls with fewer than 2 steps left, it replaces the response with a short message saying it needs more steps, so the run ends cleanly without an exception.", "Nothing here inspects what the agent is doing. If you want to notice the same tool being called repeatedly, you add that as a node or a check in your own graph."], "diagram": {"caption": "The only signal is the step count.", "mermaid": "flowchart TB\n  start[\"Run starts<br/>stop = step + recursion_limit\"]:::external --> tick[\"PregelLoop.tick\"]:::system\n  tick --> q{\"step past stop?\"}:::component\n  q -->|\"no\"| run[\"Run next tasks\"]:::component\n  run --> tick\n  q -->|\"yes\"| out[\"status = out_of_steps\"]:::queue\n  out --> err[\"GraphRecursionError\"]:::store\n  pre[\"Prebuilt ReAct agent<br/>fewer than 2 steps left\"]:::component -.->|\"ends politely first\"| bye[\"Sorry, need more steps\"]:::store\n"}, "key_parts": [{"name": "DEFAULT_RECURSION_LIMIT", "path": "libs/langgraph/langgraph/_internal/_config.py", "role": "The default step budget, overridable by environment variable", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/_internal/_config.py"}, {"name": "PregelLoop.tick", "path": "libs/langgraph/langgraph/pregel/_loop.py", "role": "Checks the step count on every iteration", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/pregel/_loop.py"}, {"name": "GraphRecursionError", "path": "libs/langgraph/langgraph/errors.py", "role": "Raised when the budget is exhausted", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/errors.py"}, {"name": "_are_more_steps_needed", "path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py", "role": "Lets the prebuilt agent stop gracefully just before the limit", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py"}], "excerpts": [{"path": "libs/langgraph/langgraph/_internal/_config.py", "start": 32, "end": 32, "expect": "DEFAULT_RECURSION_LIMIT", "title": "The default budget", "code": "DEFAULT_RECURSION_LIMIT = int(getenv(\"LANGGRAPH_DEFAULT_RECURSION_LIMIT\", \"10007\"))", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/_internal/_config.py#L32-L32"}, {"path": "libs/langgraph/langgraph/pregel/_loop.py", "start": 609, "end": 619, "expect": "out_of_steps", "title": "The check, once per step", "code": "    def tick(self) -> bool:\n        \"\"\"Execute a single iteration of the Pregel loop.\n\n        Returns:\n            True if more iterations are needed.\n        \"\"\"\n\n        # check if iteration limit is reached\n        if self.step > self.stop:\n            self.status = \"out_of_steps\"\n            return False", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/pregel/_loop.py#L609-L619"}, {"path": "libs/langgraph/langgraph/pregel/main.py", "start": 2989, "end": 2999, "expect": "GraphRecursionError", "title": "Turning the status into an error", "code": "            # handle exit\n            if loop.status == \"out_of_steps\":\n                msg = create_error_message(\n                    message=(\n                        f\"Recursion limit of {config['recursion_limit']} reached \"\n                        \"without hitting a stop condition. You can increase the \"\n                        \"limit by setting the `recursion_limit` config key.\"\n                    ),\n                    error_code=ErrorCode.GRAPH_RECURSION_LIMIT,\n                )\n                raise GraphRecursionError(msg)", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/langgraph/langgraph/pregel/main.py#L2989-L2999"}, {"path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py", "start": 620, "end": 634, "expect": "_are_more_steps_needed", "title": "The prebuilt agent's early exit", "note": "When this returns true, the agent's reply is replaced with a message saying it needs more steps.", "code": "    def _are_more_steps_needed(state: StateSchema, response: BaseMessage) -> bool:\n        has_tool_calls = isinstance(response, AIMessage) and response.tool_calls\n        all_tools_return_direct = (\n            all(call[\"name\"] in should_return_direct for call in response.tool_calls)\n            if isinstance(response, AIMessage)\n            else False\n        )\n        remaining_steps = _get_state_value(state, \"remaining_steps\", None)\n        if remaining_steps is not None:\n            if remaining_steps < 1 and all_tools_return_direct:\n                return True\n            elif remaining_steps < 2 and has_tool_calls:\n                return True\n\n        return False", "url": "https://github.com/langchain-ai/langgraph/blob/9a0394d88b2211f299dcd69df92db3480c69ee61/libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py#L620-L634"}], "gotchas": ["With a default of 10007 steps, the limit is a safety net against runaway graphs, not a loop detector. An agent can burn a lot of tokens long before reaching it.", "Some state classes in the prebuilt module carry deprecation markers at this commit, so check the current recommended agent constructor before copying this pattern."]}, {"repo": "codex", "headline": "No detector found: the loop trusts the model and compaction", "how_it_works": ["Codex's core turn function runs a plain `loop`. Each pass sends a sampling request; if the model asked for tool calls, they are executed and the loop goes round again. It exits when the model returns only a message and nothing else is pending, or when the turn is cancelled.", "No code was found in `codex-rs/core` that compares successive tool calls, counts repeats or caps the number of passes. The one place the code mentions an infinite loop is a comment about context growth: as long as compaction brings the context back under the token limit, the loop is not expected to run away.", "So the safeguards at this layer are the model's own judgment, automatic compaction when the token limit is reached, and the user interrupting."], "key_parts": [{"name": "run_turn loop", "path": "codex-rs/core/src/session/turn.rs", "role": "The agent loop for one turn: sample, run tools, repeat until no follow-up is needed", "url": "https://github.com/openai/codex/blob/b172810921f89847cd310ecc496f9c901760e933/codex-rs/core/src/session/turn.rs"}], "excerpts": [{"path": "codex-rs/core/src/session/turn.rs", "start": 149, "end": 160, "expect": "runs a loop", "title": "What the loop does, in the authors' words", "code": "/// Takes initial turn input and runs a loop where, at each sampling request,\n/// the model replies with either:\n///\n/// - requested function calls\n/// - an assistant message\n///\n/// While it is possible for the model to return multiple of these items in a\n/// single sampling request, in practice, we generally one item per sampling request:\n///\n/// - If the model requests a function call, we execute it and send the output\n///   back to the model in the next sampling request.\n/// - If the model sends only an assistant message, we record it in the", "url": "https://github.com/openai/codex/blob/b172810921f89847cd310ecc496f9c901760e933/codex-rs/core/src/session/turn.rs#L149-L160"}, {"path": "codex-rs/core/src/session/turn.rs", "start": 612, "end": 613, "expect": "infinite loop", "title": "The only mention of an infinite loop", "note": "The concern addressed here is the context filling up, not repeated behaviour.", "code": "                // as long as compaction works well in getting us way below the token limit, we shouldn't worry about being in an infinite loop.\n                if should_roll_over {", "url": "https://github.com/openai/codex/blob/b172810921f89847cd310ecc496f9c901760e933/codex-rs/core/src/session/turn.rs#L612-L613"}, {"path": "codex-rs/core/src/session/turn.rs", "start": 653, "end": 654, "expect": "needs_follow_up", "title": "The exit condition", "code": "                if !needs_follow_up {\n                    last_agent_message = sampling_request_last_agent_message;", "url": "https://github.com/openai/codex/blob/b172810921f89847cd310ecc496f9c901760e933/codex-rs/core/src/session/turn.rs#L653-L654"}], "searched": ["Searched `codex-rs/core/src` (excluding tests) for: loop detect, stuck, consecutive, identical, same command, duplicate tool, no progress, unproductive, stall. No relevant matches.", "Searched all of `codex-rs` for max_turns, max_iterations, max_tool_calls, max_steps. The only hit is a UI history constant unrelated to the agent loop.", "Read the exit conditions of the turn loop in `core/src/session/turn.rs`.", "A detector could exist outside `codex-rs/core`, for example on the server side or in the model's instructions. That was not examined."]}], "differences": [{"title": "Exact match versus judgment", "detail": "Gemini CLI and OpenHands both start with exact matching, which is cheap and has few false positives. Only Gemini CLI adds a model as judge for loops that exact matching cannot see, and it pays for that with extra model calls."}, {"title": "Call only, or call plus result", "detail": "Gemini CLI hashes the tool call alone. OpenHands requires the observation to match too, so polling a command whose output changes is not treated as a loop."}, {"title": "Both warn before they stop", "detail": "Gemini CLI injects a warning on the first detection and stops on the second. OpenHands nudges on repeated errors and stops on the other patterns. Neither kills the run at the first sign."}, {"title": "Products detect, the framework budgets", "detail": "The two products that implement detection own the whole loop, so they can watch it. LangGraph does not know what your nodes mean, so it offers a step budget and leaves behaviour to you."}, {"title": "How long before a hard cap", "detail": "The step caps differ by two orders of magnitude: 100 turns per prompt in Gemini CLI, 500 iterations per run in OpenHands, 10007 steps by default in LangGraph."}], "build_your_own": ["Start with a step cap. It is one line, and it is the only protection LangGraph gives you by default.", "Add exact-match detection on tool calls: hash the name and arguments, keep a short history, and look for cycles, not only identical consecutive calls. Gemini CLI's version is under 40 lines.", "Compare results as well as calls if your agent legitimately polls. OpenHands' action-plus-observation rule avoids that false positive.", "Warn the model once before stopping it. Both implementations do, and a message naming the tool and the error gives the model something to act on.", "Give 'stuck' its own status, separate from error and finished, so callers and UIs can respond differently.", "Only add a model-based check if exact matching is missing real loops, and gate it the way Gemini CLI does: after many turns, at a high confidence threshold, confirmed by a second model."], "method": {"scope": "Each repository was fetched at the commit listed above. For Gemini CLI, OpenHands and LangGraph the detection code and its call sites were read. For Codex the core turn loop's exit conditions were read and the core crate was searched for the terms listed in its section.", "limits": ["OpenHands refers to the `OpenHands/software-agent-sdk` repository, where the agent logic lives; the `OpenHands/OpenHands` repository is now the user interface.", "The Codex finding is 'not found in the core crate', not proof of absence across the whole product.", "Gemini CLI's text-repetition detector and the internals of its model-based check were read but are not quoted in full.", "Behaviour was read from source, not observed by running the agents."]}}</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var data = JSON.parse(document.getElementById("aa-data").textContent);
+  var app = document.getElementById("app");
+
+  // Every string from the data reaches the page through text nodes only.
+  function rich(text) {
+    var frag = document.createDocumentFragment();
+    String(text == null ? "" : text).split("`").forEach(function (part, i) {
+      if (i % 2) { var c = document.createElement("code"); c.textContent = part; frag.appendChild(c); }
+      else if (part) frag.appendChild(document.createTextNode(part));
+    });
+    return frag;
+  }
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") el.className = attrs[k]; else el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      if (Array.isArray(c)) c.forEach(function (x) { if (x) el.appendChild(x); });
+      else el.appendChild(typeof c === "string" ? rich(c) : c);
+    }
+    return el;
+  }
+  function raw(text) { return document.createTextNode(text == null ? "" : String(text)); }
+  function safeUrl(u) { return typeof u === "string" && u.indexOf("https://") === 0 ? u : null; }
+  function link(url, node) {
+    var u = safeUrl(url);
+    return u ? h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, node) : h("span", null, node);
+  }
+  function section(id, n, title, sub) {
+    var s = h("section", { id: id }, h("div", { class: "wrap" },
+      h("span", { class: "num" }, n), h("h2", null, title), sub ? h("p", { class: "sub" }, sub) : null));
+    app.appendChild(s);
+    return s.firstChild;
+  }
+  var VERDICT = { implements: "Built in", partial: "Partly built in", delegates: "Left to the developer", absent: "Not found" };
+  var meta = data.meta || {}, repos = data.repos || [], byId = {};
+  repos.forEach(function (r) { byId[r.id] = r; });
+  function repoName(r) { return r.repo || r.id; }
+
+  app.appendChild(h("div", { class: "hero" }, h("div", { class: "wrap" },
+    h("p", { class: "kicker" }, "Agent Anatomy"),
+    h("h1", null, meta.question || meta.title || ""),
+    h("p", { class: "answer" }, data.answer || ""),
+    h("div", { class: "repos" }, repos.map(function (r) {
+      var inner = [h("b", null, raw(repoName(r))), h("span", null, raw((r.kind || "") + (r.language ? " · " + r.language : ""))), h("span", null, raw(VERDICT[r.verdict] || ""))];
+      var u = safeUrl(r.url);
+      return u ? h("a", { class: "repo", href: "#dive-" + r.id }, inner) : h("div", { class: "repo" }, inner);
+    })),
+    h("p", { class: "meta" }, raw("analysed " + (meta.analysed_at || "") + " · each repository pinned to one commit, listed at the end"))
+  )));
+
+  var links = [["compare", "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), [["differences", "Differences"], ["build", "Build your own"]]);
+  app.appendChild(h("nav", null, h("div", { class: "wrap" }, links.map(function (l) { return h("a", { href: "#" + l[0] }, raw(l[1])); }))));
+  var n = 0; function next() { n += 1; return (n < 10 ? "0" : "") + n; }
+
+  // ---- Comparison ----
+  var comp = data.comparison || {};
+  var sec = section("compare", next(), "Side by side", "The same question asked of each codebase.");
+  sec.appendChild(h("div", { class: "card tablewrap" }, h("table", null,
+    h("thead", null, h("tr", null, h("th", null, ""), (comp.dimensions || []).map(function (d) { return h("th", null, raw(d)); }))),
+    h("tbody", null, (comp.rows || []).map(function (row) {
+      var r = byId[row.repo] || {};
+      return h("tr", null,
+        h("td", { class: "who" }, raw(r.id || row.repo), h("br"), h("span", { class: "tag " + r.verdict }, raw(VERDICT[r.verdict] || ""))),
+        (row.cells || []).map(function (c) { return h("td", null, c); }));
+    })))));
+
+  // ---- Deep dives ----
+  var canvases = [];
+  (data.deep_dives || []).forEach(function (d) {
+    var r = byId[d.repo] || {};
+    sec = section("dive-" + d.repo, next(), repoName(r), r.what || null);
+    var body = h("div", { class: "card dive" },
+      h("header", null,
+        h("div", { class: "tags" }, h("span", { class: "tag " + r.verdict }, raw(VERDICT[r.verdict] || "")),
+          h("span", { class: "tag plain" }, raw(r.kind || "")), r.license ? h("span", { class: "tag plain" }, raw(r.license)) : null),
+        h("h3", null, d.headline)),
+      h("p", { class: "lead" }, r.summary || ""),
+      (d.how_it_works || []).map(function (p) { return h("p", null, p); }));
+    if (d.diagram && d.diagram.mermaid) {
+      var canvas = h("div", { class: "canvas" }, h("pre", null, raw(d.diagram.mermaid)));
+      canvases.push([canvas, d.diagram.mermaid]);
+      body.appendChild(h("h4", null, "The flow"));
+      body.appendChild(canvas);
+      if (d.diagram.caption) body.appendChild(h("p", { class: "caption" }, d.diagram.caption));
+    }
+    if ((d.key_parts || []).length) {
+      body.appendChild(h("h4", null, "Key parts"));
+      body.appendChild(h("div", { class: "tablewrap" }, h("table", { class: "parts" },
+        h("thead", null, h("tr", null, h("th", null, "Name"), h("th", null, "What it does"), h("th", null, "Where"))),
+        h("tbody", null, d.key_parts.map(function (p) {
+          return h("tr", null, h("td", null, raw(p.name)), h("td", null, p.role), h("td", { class: "path" }, link(p.url, raw(p.path))));
+        })))));
+    }
+    if ((d.excerpts || []).length) {
+      body.appendChild(h("h4", null, "The code"));
+      d.excerpts.forEach(function (ex) {
+        var pre = h("pre", null, String(ex.code).split("\n").map(function (line, i) {
+          return h("span", { class: "ln", "data-n": String(ex.start + i) }, raw(line || " "));
+        }));
+        body.appendChild(h("div", { class: "excerpt" },
+          h("header", null, h("b", null, ex.title), link(ex.url, raw(ex.path + ":" + ex.start + "-" + ex.end))),
+          pre, ex.note ? h("p", null, ex.note) : null));
+      });
+    }
+    if ((d.gotchas || []).length) {
+      body.appendChild(h("h4", null, "Worth knowing"));
+      body.appendChild(h("ul", { class: "plain" }, d.gotchas.map(function (g) { return h("li", null, g); })));
+    }
+    if ((d.searched || []).length) {
+      body.appendChild(h("h4", null, "What was searched"));
+      body.appendChild(h("ul", { class: "plain" }, d.searched.map(function (g) { return h("li", null, g); })));
+    }
+    sec.appendChild(body);
+  });
+
+  sec = section("differences", next(), "Where they differ, and why", null);
+  sec.appendChild(h("div", { class: "grid" }, (data.differences || []).map(function (x) {
+    return h("div", { class: "card" }, h("h3", null, x.title), h("p", null, x.detail));
+  })));
+
+  sec = section("build", next(), "If you are building your own", "What these implementations suggest, in order of how early you need it.");
+  sec.appendChild(h("div", { class: "card" }, h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); }))));
+
+  var method = data.method || {};
+  app.appendChild(h("footer", null, h("div", { class: "wrap" },
+    h("strong", null, "Sources and limits"),
+    h("ul", null, repos.map(function (r) {
+      return h("li", null, link(r.url, raw(repoName(r))), raw(" at commit " + String(r.commit).slice(0, 10) + (r.commit_date ? " (" + r.commit_date + ")" : "") + (r.license ? ", " + r.license + " licence" : "")));
+    })),
+    method.scope ? h("p", null, method.scope) : null,
+    h("ul", null, (method.limits || []).concat([
+      "Code excerpts are copied by script from the pinned commits and belong to their authors under the licences above. Explanations are an independent reading of that code, not statements by the maintainers, and these projects change quickly."
+    ]).map(function (l) { return h("li", null, l); })),
+    h("p", { class: "gen" }, "Generated with agent-anatomy, a Claude Code plugin."))));
+
+  // ---- Diagrams ----
+  var css = getComputedStyle(document.documentElement);
+  function v(name) { return css.getPropertyValue(name).trim(); }
+  var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  var classDefs = "\n" + [
+    "classDef person fill:" + v("--d-person") + ",stroke:" + v("--d-person") + ",color:" + (isDark ? v("--d-on-light") : v("--d-on")),
+    "classDef system fill:" + v("--d-system") + ",stroke:" + v("--d-system") + ",color:" + v("--d-on"),
+    "classDef component fill:" + v("--d-component") + ",stroke:" + v("--d-component") + ",color:" + (isDark ? v("--d-on") : v("--d-on-light")),
+    "classDef external fill:" + v("--d-ext") + ",stroke:" + v("--d-ext") + ",color:" + v("--d-on"),
+    "classDef store fill:" + v("--d-store") + ",stroke:" + v("--d-store") + ",color:" + v("--d-on"),
+    "classDef queue fill:" + v("--d-queue") + ",stroke:" + v("--d-queue") + ",color:" + v("--d-on")
+  ].join("\n") + "\n";
+  function fail(canvas, msg) { canvas.insertBefore(h("p", { class: "note" }, raw(msg)), canvas.firstChild); }
+  if (!canvases.length) return;
+  if (!window.mermaid) {
+    canvases.forEach(function (c) { fail(c[0], "Diagram renderer could not be loaded (offline?). Source shown instead."); });
+    return;
+  }
+  window.mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme: "base",
+    themeVariables: {
+      fontFamily: v("--sans"), fontSize: "14px", background: "transparent",
+      primaryColor: v("--d-system"), primaryTextColor: v("--d-on"), primaryBorderColor: v("--d-system"),
+      lineColor: v("--d-line"), textColor: v("--ink"), mainBkg: v("--d-system"),
+      clusterBkg: v("--d-group"), clusterBorder: v("--d-group-line"), titleColor: v("--ink"),
+      edgeLabelBackground: v("--surface-2"), nodeTextColor: v("--d-on"),
+      actorBkg: v("--d-system"), actorBorder: v("--d-system"), actorTextColor: v("--d-on"), actorLineColor: v("--d-line"),
+      signalColor: v("--ink"), signalTextColor: v("--ink"), labelBoxBkgColor: v("--surface"), labelBoxBorderColor: v("--d-group-line"),
+      labelTextColor: v("--ink"), loopTextColor: v("--ink"), noteBkgColor: v("--warn-soft"), noteTextColor: v("--ink"), noteBorderColor: v("--d-group-line"),
+      activationBkgColor: v("--accent-soft"), activationBorderColor: v("--d-line")
+    },
+    flowchart: { curve: "basis", useMaxWidth: true, padding: 14, nodeSpacing: 46, rankSpacing: 54 },
+    sequence: { useMaxWidth: true, mirrorActors: false, wrap: true }
+  });
+  canvases.reduce(function (chain, c, i) {
+    return chain.then(function () {
+      var code = c[1];
+      if (/^\s*(flowchart|graph)\b/.test(code)) code += classDefs;
+      return window.mermaid.render("aa-diagram-" + i, code).then(function (out) {
+        c[0].innerHTML = out.svg;
+      }).catch(function (err) {
+        fail(c[0], "This diagram could not be rendered: " + String(err && err.message || err).split("\n")[0]);
+        var stray = document.getElementById("daa-diagram-" + i); if (stray) stray.remove();
+      });
+    });
+  }, Promise.resolve());
+})();
+</script>
+</body>
+</html>

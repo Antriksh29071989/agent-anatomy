@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__AA_TITLE__ - Agent Anatomy</title>
+__AA_HEAD__
+<style>
+:root {
+  --bg: #f5f3ee; --surface: #ffffff; --surface-2: #faf9f6; --ink: #151a22; --muted: #5a6473;
+  --line: #e0dcd2; --accent: #0a66c2; --accent-soft: #e4effa; --accent-ink: #084f96;
+  --hero: #0a1120; --hero-2: #101b33; --hero-ink: #eaf1fb; --hero-muted: #93a5c1; --hero-line: rgba(120,160,220,.16);
+  --ok: #17794a; --ok-soft: #e2f3ea; --warn: #9a5a00; --warn-soft: #fbefd9; --spec: #6b4fd0; --spec-soft: #ece7fb;
+  --none: #6b7280; --none-soft: #eceef1;
+  --code-bg: #0f1726; --code-ink: #dbe6f5; --code-num: #5f7191; --code-line: #1e2a40;
+  --d-person: #0b3d75; --d-system: #0a66c2; --d-component: #5aa2e6; --d-ext: #7c8696; --d-store: #17794a; --d-queue: #9a5a00;
+  --d-on: #ffffff; --d-on-light: #0a1120; --d-line: #6b7686; --d-group: #f0ede6; --d-group-line: #b9b3a5;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c111b; --surface: #131a27; --surface-2: #171f2e; --ink: #e6ecf5; --muted: #98a4b7;
+    --line: #253044; --accent: #6db3ff; --accent-soft: #15273f; --accent-ink: #9bcbff;
+    --hero: #070c17; --hero-2: #0e172b;
+    --ok: #5fd39a; --ok-soft: #12301f; --warn: #f0b458; --warn-soft: #33260e; --spec: #b3a1ff; --spec-soft: #241d44;
+    --none: #a3acba; --none-soft: #222a38;
+    --code-bg: #0a101c; --code-line: #1a2538;
+    --d-person: #9bcbff; --d-system: #3d8fe6; --d-component: #1f4f86; --d-ext: #4a5568; --d-store: #2a9d68; --d-queue: #c98a2b;
+    --d-line: #8b98ad; --d-group: #172133; --d-group-line: #3a4860;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font: .86em var(--mono); background: var(--accent-soft); color: var(--accent-ink); padding: .1em .38em; border-radius: 4px; overflow-wrap: anywhere; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+.hero { background:
+    linear-gradient(var(--hero-line) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px) 0 0 / 32px 100%,
+    radial-gradient(1200px 500px at 15% -10%, #17366b 0%, transparent 60%),
+    linear-gradient(180deg, var(--hero) 0%, var(--hero-2) 100%);
+  color: var(--hero-ink); padding: 56px 0 44px; }
+.kicker { font: 600 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: #7fb7ff; margin: 0 0 18px; }
+.hero h1 { font-size: clamp(30px, 5vw, 50px); line-height: 1.1; letter-spacing: -.025em; margin: 0 0 20px; font-weight: 700; max-width: 20em; text-wrap: balance; }
+.answer { font-size: 18px; max-width: 50em; margin: 0 0 28px; padding-left: 16px; border-left: 3px solid #4d9bf0; }
+.answer code { background: rgba(120,170,240,.16); color: #cfe3ff; }
+.repos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: var(--hero-line); border: 1px solid var(--hero-line); border-radius: 10px; overflow: hidden; }
+.repo { background: rgba(10,17,32,.72); padding: 14px 16px; color: inherit; display: block; }
+.repo:hover { text-decoration: none; background: rgba(20,32,58,.8); }
+.repo b { display: block; font: 600 19px/1.25 var(--sans); }
+.repo span { font: 11px/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hero-muted); display: block; }
+.meta { margin-top: 18px; font: 12px/1.6 var(--mono); color: var(--hero-muted); }
+
+nav { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; gap: 20px; overflow-x: auto; padding-top: 11px; padding-bottom: 11px; scrollbar-width: none; }
+nav a { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+
+section { padding: 50px 0 6px; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.02em; line-height: 1.15; margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 0 0 22px; max-width: 48em; }
+.num { font: 600 12px/1 var(--mono); letter-spacing: .14em; color: var(--accent); display: block; margin-bottom: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 8px; letter-spacing: -.01em; }
+h4 { font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 26px 0 12px; }
+p { margin: 0 0 12px; }
+.tag { display: inline-block; font: 600 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 5px; background: var(--accent-soft); color: var(--accent-ink); white-space: nowrap; }
+.tag.implements { background: var(--ok-soft); color: var(--ok); }
+.tag.partial { background: var(--warn-soft); color: var(--warn); }
+.tag.delegates { background: var(--spec-soft); color: var(--spec); }
+.tag.absent { background: var(--none-soft); color: var(--none); }
+.tag.plain { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+
+.tablewrap { overflow-x: auto; padding: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th { text-align: left; font: 600 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 14px 16px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; min-width: 130px; }
+tr:last-child td { border-bottom: 0; }
+td.who { font-weight: 600; white-space: nowrap; min-width: 0; }
+td.who .tag { margin-top: 6px; display: inline-block; }
+.parts td:first-child { font: 600 13px/1.5 var(--mono); white-space: nowrap; }
+.parts td.path { font: 12.5px/1.5 var(--mono); overflow-wrap: anywhere; }
+
+.dive > header { margin-bottom: 14px; }
+.dive > header h3 { font-size: 22px; letter-spacing: -.015em; }
+.dive .lead { font-size: 17px; color: var(--ink); }
+.canvas { padding: 20px 12px; overflow-x: auto; text-align: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; }
+.canvas svg { max-width: 100%; height: auto; }
+.canvas svg .edgeLabel, .canvas svg .edgeLabel p, .canvas svg .edgeLabel span { color: var(--ink) !important; fill: var(--ink) !important; background-color: var(--surface-2) !important; font-size: 12.5px; }
+.canvas svg .cluster-label, .canvas svg .cluster-label p, .canvas svg .cluster-label span { color: var(--muted) !important; fill: var(--muted) !important; }
+.canvas pre { text-align: left; font: 12.5px/1.5 var(--mono); color: var(--muted); margin: 0; white-space: pre-wrap; }
+.note { font: 12.5px/1.5 var(--mono); color: var(--warn); margin: 0 0 10px; text-align: left; }
+.caption { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+
+.excerpt { border: 1px solid var(--code-line); border-radius: 10px; overflow: hidden; margin: 0 0 18px; background: var(--code-bg); }
+.excerpt header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--code-line); }
+.excerpt header b { color: #f1f6fd; font-size: 14.5px; }
+.excerpt header a, .excerpt header span { font: 12px/1.4 var(--mono); color: #8fbdf5; overflow-wrap: anywhere; }
+.excerpt pre { margin: 0; padding: 12px 0; overflow-x: auto; font: 12.5px/1.6 var(--mono); color: var(--code-ink); tab-size: 2; }
+.excerpt .ln { display: block; padding: 0 16px 0 0; white-space: pre; }
+.excerpt .ln::before { content: attr(data-n); display: inline-block; width: 52px; padding-right: 14px; text-align: right; color: var(--code-num); user-select: none; }
+.excerpt p { margin: 0; padding: 11px 14px; border-top: 1px solid var(--code-line); color: #b9c8de; font-size: 14.5px; }
+.excerpt p code { background: rgba(120,170,240,.16); color: #cfe3ff; }
+ul.plain { margin: 0 0 12px; padding-left: 20px; }
+ul.plain li { margin-bottom: 6px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid .card { margin: 0; }
+.grid .card p { color: var(--muted); margin: 0; }
+.steps { counter-reset: t; list-style: none; padding: 0; margin: 0; }
+.steps li { counter-increment: t; position: relative; padding: 14px 0 14px 46px; border-bottom: 1px solid var(--line); font-size: 17px; }
+.steps li:last-child { border-bottom: 0; }
+.steps li::before { content: counter(t, decimal-leading-zero); position: absolute; left: 0; top: 17px; font: 600 13px var(--mono); color: var(--accent); }
+footer { margin-top: 56px; padding: 28px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; }
+footer ul { padding-left: 18px; margin: 8px 0 14px; }
+footer .gen { font: 12px var(--mono); }
+@media print { nav { display: none; } .card, .excerpt { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="aa-data">__AA_DATA__</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var data = JSON.parse(document.getElementById("aa-data").textContent);
+  var app = document.getElementById("app");
+
+  // Every string from the data reaches the page through text nodes only.
+  function rich(text) {
+    var frag = document.createDocumentFragment();
+    String(text == null ? "" : text).split("`").forEach(function (part, i) {
+      if (i % 2) { var c = document.createElement("code"); c.textContent = part; frag.appendChild(c); }
+      else if (part) frag.appendChild(document.createTextNode(part));
+    });
+    return frag;
+  }
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") el.className = attrs[k]; else el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      if (Array.isArray(c)) c.forEach(function (x) { if (x) el.appendChild(x); });
+      else el.appendChild(typeof c === "string" ? rich(c) : c);
+    }
+    return el;
+  }
+  function raw(text) { return document.createTextNode(text == null ? "" : String(text)); }
+  function safeUrl(u) { return typeof u === "string" && u.indexOf("https://") === 0 ? u : null; }
+  function link(url, node) {
+    var u = safeUrl(url);
+    return u ? h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, node) : h("span", null, node);
+  }
+  function section(id, n, title, sub) {
+    var s = h("section", { id: id }, h("div", { class: "wrap" },
+      h("span", { class: "num" }, n), h("h2", null, title), sub ? h("p", { class: "sub" }, sub) : null));
+    app.appendChild(s);
+    return s.firstChild;
+  }
+  var VERDICT = { implements: "Built in", partial: "Partly built in", delegates: "Left to the developer", absent: "Not found" };
+  var meta = data.meta || {}, repos = data.repos || [], byId = {};
+  repos.forEach(function (r) { byId[r.id] = r; });
+  function repoName(r) { return r.repo || r.id; }
+
+  app.appendChild(h("div", { class: "hero" }, h("div", { class: "wrap" },
+    h("p", { class: "kicker" }, "Agent Anatomy"),
+    h("h1", null, meta.question || meta.title || ""),
+    h("p", { class: "answer" }, data.answer || ""),
+    h("div", { class: "repos" }, repos.map(function (r) {
+      var inner = [h("b", null, raw(repoName(r))), h("span", null, raw((r.kind || "") + (r.language ? " · " + r.language : ""))), h("span", null, raw(VERDICT[r.verdict] || ""))];
+      var u = safeUrl(r.url);
+      return u ? h("a", { class: "repo", href: "#dive-" + r.id }, inner) : h("div", { class: "repo" }, inner);
+    })),
+    h("p", { class: "meta" }, raw("analysed " + (meta.analysed_at || "") + " · each repository pinned to one commit, listed at the end"))
+  )));
+
+  var links = [["compare", "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), [["differences", "Differences"], ["build", "Build your own"]]);
+  app.appendChild(h("nav", null, h("div", { class: "wrap" }, links.map(function (l) { return h("a", { href: "#" + l[0] }, raw(l[1])); }))));
+  var n = 0; function next() { n += 1; return (n < 10 ? "0" : "") + n; }
+
+  // ---- Comparison ----
+  var comp = data.comparison || {};
+  var sec = section("compare", next(), "Side by side", "The same question asked of each codebase.");
+  sec.appendChild(h("div", { class: "card tablewrap" }, h("table", null,
+    h("thead", null, h("tr", null, h("th", null, ""), (comp.dimensions || []).map(function (d) { return h("th", null, raw(d)); }))),
+    h("tbody", null, (comp.rows || []).map(function (row) {
+      var r = byId[row.repo] || {};
+      return h("tr", null,
+        h("td", { class: "who" }, raw(r.id || row.repo), h("br"), h("span", { class: "tag " + r.verdict }, raw(VERDICT[r.verdict] || ""))),
+        (row.cells || []).map(function (c) { return h("td", null, c); }));
+    })))));
+
+  // ---- Deep dives ----
+  var canvases = [];
+  (data.deep_dives || []).forEach(function (d) {
+    var r = byId[d.repo] || {};
+    sec = section("dive-" + d.repo, next(), repoName(r), r.what || null);
+    var body = h("div", { class: "card dive" },
+      h("header", null,
+        h("div", { class: "tags" }, h("span", { class: "tag " + r.verdict }, raw(VERDICT[r.verdict] || "")),
+          h("span", { class: "tag plain" }, raw(r.kind || "")), r.license ? h("span", { class: "tag plain" }, raw(r.license)) : null),
+        h("h3", null, d.headline)),
+      h("p", { class: "lead" }, r.summary || ""),
+      (d.how_it_works || []).map(function (p) { return h("p", null, p); }));
+    if (d.diagram && d.diagram.mermaid) {
+      var canvas = h("div", { class: "canvas" }, h("pre", null, raw(d.diagram.mermaid)));
+      canvases.push([canvas, d.diagram.mermaid]);
+      body.appendChild(h("h4", null, "The flow"));
+      body.appendChild(canvas);
+      if (d.diagram.caption) body.appendChild(h("p", { class: "caption" }, d.diagram.caption));
+    }
+    if ((d.key_parts || []).length) {
+      body.appendChild(h("h4", null, "Key parts"));
+      body.appendChild(h("div", { class: "tablewrap" }, h("table", { class: "parts" },
+        h("thead", null, h("tr", null, h("th", null, "Name"), h("th", null, "What it does"), h("th", null, "Where"))),
+        h("tbody", null, d.key_parts.map(function (p) {
+          return h("tr", null, h("td", null, raw(p.name)), h("td", null, p.role), h("td", { class: "path" }, link(p.url, raw(p.path))));
+        })))));
+    }
+    if ((d.excerpts || []).length) {
+      body.appendChild(h("h4", null, "The code"));
+      d.excerpts.forEach(function (ex) {
+        var pre = h("pre", null, String(ex.code).split("\n").map(function (line, i) {
+          return h("span", { class: "ln", "data-n": String(ex.start + i) }, raw(line || " "));
+        }));
+        body.appendChild(h("div", { class: "excerpt" },
+          h("header", null, h("b", null, ex.title), link(ex.url, raw(ex.path + ":" + ex.start + "-" + ex.end))),
+          pre, ex.note ? h("p", null, ex.note) : null));
+      });
+    }
+    if ((d.gotchas || []).length) {
+      body.appendChild(h("h4", null, "Worth knowing"));
+      body.appendChild(h("ul", { class: "plain" }, d.gotchas.map(function (g) { return h("li", null, g); })));
+    }
+    if ((d.searched || []).length) {
+      body.appendChild(h("h4", null, "What was searched"));
+      body.appendChild(h("ul", { class: "plain" }, d.searched.map(function (g) { return h("li", null, g); })));
+    }
+    sec.appendChild(body);
+  });
+
+  sec = section("differences", next(), "Where they differ, and why", null);
+  sec.appendChild(h("div", { class: "grid" }, (data.differences || []).map(function (x) {
+    return h("div", { class: "card" }, h("h3", null, x.title), h("p", null, x.detail));
+  })));
+
+  sec = section("build", next(), "If you are building your own", "What these implementations suggest, in order of how early you need it.");
+  sec.appendChild(h("div", { class: "card" }, h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); }))));
+
+  var method = data.method || {};
+  app.appendChild(h("footer", null, h("div", { class: "wrap" },
+    h("strong", null, "Sources and limits"),
+    h("ul", null, repos.map(function (r) {
+      return h("li", null, link(r.url, raw(repoName(r))), raw(" at commit " + String(r.commit).slice(0, 10) + (r.commit_date ? " (" + r.commit_date + ")" : "") + (r.license ? ", " + r.license + " licence" : "")));
+    })),
+    method.scope ? h("p", null, method.scope) : null,
+    h("ul", null, (method.limits || []).concat([
+      "Code excerpts are copied by script from the pinned commits and belong to their authors under the licences above. Explanations are an independent reading of that code, not statements by the maintainers, and these projects change quickly."
+    ]).map(function (l) { return h("li", null, l); })),
+    h("p", { class: "gen" }, "Generated with agent-anatomy, a Claude Code plugin."))));
+
+  // ---- Diagrams ----
+  var css = getComputedStyle(document.documentElement);
+  function v(name) { return css.getPropertyValue(name).trim(); }
+  var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  var classDefs = "\n" + [
+    "classDef person fill:" + v("--d-person") + ",stroke:" + v("--d-person") + ",color:" + (isDark ? v("--d-on-light") : v("--d-on")),
+    "classDef system fill:" + v("--d-system") + ",stroke:" + v("--d-system") + ",color:" + v("--d-on"),
+    "classDef component fill:" + v("--d-component") + ",stroke:" + v("--d-component") + ",color:" + (isDark ? v("--d-on") : v("--d-on-light")),
+    "classDef external fill:" + v("--d-ext") + ",stroke:" + v("--d-ext") + ",color:" + v("--d-on"),
+    "classDef store fill:" + v("--d-store") + ",stroke:" + v("--d-store") + ",color:" + v("--d-on"),
+    "classDef queue fill:" + v("--d-queue") + ",stroke:" + v("--d-queue") + ",color:" + v("--d-on")
+  ].join("\n") + "\n";
+  function fail(canvas, msg) { canvas.insertBefore(h("p", { class: "note" }, raw(msg)), canvas.firstChild); }
+  if (!canvases.length) return;
+  if (!window.mermaid) {
+    canvases.forEach(function (c) { fail(c[0], "Diagram renderer could not be loaded (offline?). Source shown instead."); });
+    return;
+  }
+  window.mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme: "base",
+    themeVariables: {
+      fontFamily: v("--sans"), fontSize: "14px", background: "transparent",
+      primaryColor: v("--d-system"), primaryTextColor: v("--d-on"), primaryBorderColor: v("--d-system"),
+      lineColor: v("--d-line"), textColor: v("--ink"), mainBkg: v("--d-system"),
+      clusterBkg: v("--d-group"), clusterBorder: v("--d-group-line"), titleColor: v("--ink"),
+      edgeLabelBackground: v("--surface-2"), nodeTextColor: v("--d-on"),
+      actorBkg: v("--d-system"), actorBorder: v("--d-system"), actorTextColor: v("--d-on"), actorLineColor: v("--d-line"),
+      signalColor: v("--ink"), signalTextColor: v("--ink"), labelBoxBkgColor: v("--surface"), labelBoxBorderColor: v("--d-group-line"),
+      labelTextColor: v("--ink"), loopTextColor: v("--ink"), noteBkgColor: v("--warn-soft"), noteTextColor: v("--ink"), noteBorderColor: v("--d-group-line"),
+      activationBkgColor: v("--accent-soft"), activationBorderColor: v("--d-line")
+    },
+    flowchart: { curve: "basis", useMaxWidth: true, padding: 14, nodeSpacing: 46, rankSpacing: 54 },
+    sequence: { useMaxWidth: true, mirrorActors: false, wrap: true }
+  });
+  canvases.reduce(function (chain, c, i) {
+    return chain.then(function () {
+      var code = c[1];
+      if (/^\s*(flowchart|graph)\b/.test(code)) code += classDefs;
+      return window.mermaid.render("aa-diagram-" + i, code).then(function (out) {
+        c[0].innerHTML = out.svg;
+      }).catch(function (err) {
+        fail(c[0], "This diagram could not be rendered: " + String(err && err.message || err).split("\n")[0]);
+        var stray = document.getElementById("daa-diagram-" + i); if (stray) stray.remove();
+      });
+    });
+  }, Promise.resolve());
+})();
+</script>
+</body>
+</html>

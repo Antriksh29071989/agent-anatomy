@@ -1,0 +1,118 @@
+{
+  "checked": "2026-10-03",
+  "note": "Default candidates when the user names no repository. Names, licences and activity were read from the GitHub API on the date above; re-check before relying on them.",
+  "repos": [
+    {
+      "id": "gemini-cli",
+      "repo": "google-gemini/gemini-cli",
+      "kind": "product",
+      "language": "TypeScript",
+      "license": "Apache-2.0",
+      "what": "Google's terminal coding agent"
+    },
+    {
+      "id": "codex",
+      "repo": "openai/codex",
+      "kind": "product",
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "what": "OpenAI's terminal coding agent"
+    },
+    {
+      "id": "openhands",
+      "repo": "OpenHands/software-agent-sdk",
+      "kind": "product",
+      "language": "Python",
+      "license": "MIT",
+      "what": "The agent SDK and server behind OpenHands (the OpenHands/OpenHands repository is now the UI)"
+    },
+    {
+      "id": "cline",
+      "repo": "cline/cline",
+      "kind": "product",
+      "language": "TypeScript",
+      "license": "Apache-2.0",
+      "what": "Coding agent that runs in the editor"
+    },
+    {
+      "id": "opencode",
+      "repo": "anomalyco/opencode",
+      "kind": "product",
+      "language": "TypeScript",
+      "license": "MIT",
+      "what": "Open-source terminal coding agent"
+    },
+    {
+      "id": "goose",
+      "repo": "aaif-goose/goose",
+      "kind": "product",
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "what": "Extensible local agent"
+    },
+    {
+      "id": "aider",
+      "repo": "Aider-AI/aider",
+      "kind": "product",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "what": "Pair-programming agent in the terminal"
+    },
+    {
+      "id": "langgraph",
+      "repo": "langchain-ai/langgraph",
+      "kind": "framework",
+      "language": "Python",
+      "license": "MIT",
+      "what": "Graph-based agent orchestration framework"
+    },
+    {
+      "id": "deepagents",
+      "repo": "langchain-ai/deepagents",
+      "kind": "framework",
+      "language": "Python",
+      "license": "MIT",
+      "what": "Agent harness built on LangGraph"
+    },
+    {
+      "id": "openai-agents",
+      "repo": "openai/openai-agents-python",
+      "kind": "framework",
+      "language": "Python",
+      "license": "MIT",
+      "what": "OpenAI's agent SDK"
+    },
+    {
+      "id": "adk",
+      "repo": "google/adk-python",
+      "kind": "framework",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "what": "Google's Agent Development Kit"
+    },
+    {
+      "id": "pydantic-ai",
+      "repo": "pydantic/pydantic-ai",
+      "kind": "framework",
+      "language": "Python",
+      "license": "MIT",
+      "what": "Typed agent framework"
+    },
+    {
+      "id": "smolagents",
+      "repo": "huggingface/smolagents",
+      "kind": "framework",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "what": "Minimal agent library with code-writing agents"
+    },
+    {
+      "id": "crewai",
+      "repo": "crewAIInc/crewAI",
+      "kind": "framework",
+      "language": "Python",
+      "license": "MIT",
+      "what": "Multi-agent orchestration framework"
+    }
+  ]
+}

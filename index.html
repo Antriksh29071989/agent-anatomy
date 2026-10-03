@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Anatomy</title>
+<meta name="description" content="How production AI agents are really built, read from their source code.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Agent Anatomy">
+<meta property="og:description" content="How production AI agents are really built: one technique at a time, compared across real codebases, with the actual code.">
+<meta property="og:url" content="https://antriksh29071989.github.io/agent-anatomy/">
+<meta property="og:image" content="https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root { --bg: #f5f3ee; --surface: #ffffff; --ink: #151a22; --muted: #5a6473; --line: #e0dcd2; --accent: #0a66c2;
+  --hero: #0a1120; --hero-2: #101b33; --hero-ink: #eaf1fb; --hero-muted: #93a5c1; --hero-line: rgba(120,160,220,.16);
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0c111b; --surface: #131a27; --ink: #e6ecf5; --muted: #98a4b7; --line: #253044; --accent: #6db3ff; --hero: #070c17; --hero-2: #0e172b; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+.hero { background:
+    linear-gradient(var(--hero-line) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px) 0 0 / 32px 100%,
+    radial-gradient(1200px 500px at 15% -10%, #17366b 0%, transparent 60%),
+    linear-gradient(180deg, var(--hero) 0%, var(--hero-2) 100%);
+  color: var(--hero-ink); padding: 56px 0 44px; }
+.kicker { font: 600 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: #7fb7ff; margin: 0 0 18px; }
+h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.05; letter-spacing: -.025em; margin: 0 0 14px; }
+.hero p { color: var(--hero-muted); font-size: 18px; max-width: 40em; margin: 0; }
+.hero a { color: #9bcbff; }
+main { padding: 36px 0 56px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.card { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; color: inherit; transition: border-color .15s, transform .15s; }
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
+.card p { margin: 0 0 14px; color: var(--muted); }
+.card span { font: 12px var(--mono); color: var(--muted); }
+.card b { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: 14px; }
+code { font: .9em var(--mono); }
+</style>
+</head>
+<body>
+<div class="hero"><div class="wrap">
+  <p class="kicker">Agent Anatomy</p>
+  <h1>How production AI agents are really built</h1>
+  <p>One technique at a time, compared across real agent codebases, with the actual code. Every excerpt is copied by script from a pinned commit. Generated with the <a href="https://github.com/Antriksh29071989/agent-anatomy">agent-anatomy plugin</a> for Claude Code.</p>
+</div></div>
+<main><div class="wrap"><div class="grid">
+  <a class="card" href="reports/loop-detection/">
+    <h2>Loop detection</h2>
+    <p>How do agents notice they are stuck, and what do they do about it? Gemini CLI asks a second model, OpenHands matches patterns, LangGraph counts steps.</p>
+    <span>gemini-cli &middot; OpenHands &middot; LangGraph &middot; Codex &middot; analysed 2026-10-03</span><br>
+    <b>Read the report &rarr;</b>
+  </a>
+</div></div></main>
+<footer><div class="wrap">
+  Ask your own: <code>/agent-anatomy:ask &lt;question&gt;</code>. Explanations are an independent reading of public code at one commit.
+</div></footer>
+</body>
+</html>
