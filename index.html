@@ -120,14 +120,14 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
   </div>
 
   <p class="kicker">Top story</p>
-  <p class="byline">Four codebases compared &middot; <b>16 verified excerpts</b> &middot; analysed October 3, 2026</p>
+  <p class="byline">Four codebases compared &middot; <b>every claim reviewed against the source</b> &middot; analysed October 3, 2026</p>
   <h2><a href="reports/loop-detection/">How agents notice they are stuck in a loop, and what they do about it</a></h2>
   <section class="lead">
     <figure class="figure" style="margin:0">
       <h4>Who detects what</h4>
       <table>
         <tr><td>Gemini CLI<span class="verdict ok">Built in</span></td><td>Three detectors: repeated tool-call cycles, repeated text, and a model acting as judge, double-checked by a second model when one is available.</td></tr>
-        <tr><td>OpenHands<span class="verdict ok">Built in</span></td><td>Five patterns over recent events, such as four identical action-and-result pairs.</td></tr>
+        <tr><td>OpenHands<span class="verdict ok">Built in</span></td><td>Four working patterns over recent events, such as four identical action-and-result pairs.</td></tr>
         <tr><td>LangGraph<span class="verdict mid">Left to you</span></td><td>A step budget only. The default is 10,007 steps.</td></tr>
         <tr><td>Codex<span class="verdict none">Not found</span></td><td>No detector or step cap found in the core turn loop.</td></tr>
       </table>
@@ -136,7 +136,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
     <div>
       <p class="dropcap">There is no single technique. Gemini CLI hashes every tool call's name and arguments and looks for a cycle of up to five calls repeated five times. That catches the obvious loops. For the subtle ones, where an agent keeps doing slightly different unproductive things, it waits thirty turns and then asks a model whether the conversation is going anywhere.</p>
       <p>OpenHands takes the rule-based route. It compares both the action and what came back, so a command that is polled and returns something new each time is not mistaken for a loop.</p>
-      <p>The two agree on one thing: warn the model before stopping it. Gemini CLI injects a message on the first detection and ends the turn on the second. OpenHands names the failing tool and its error in a nudge, and only then marks the run as stuck.</p>
+      <p>Both can warn the model before stopping it. Gemini CLI injects a message on the first detection and ends the turn on the second. OpenHands does this for one pattern only: when the same action keeps erroring, it sends a nudge naming the tool and the error before it marks the run as stuck.</p>
       <p>LangGraph, a framework, does not look at behaviour at all. It counts steps and leaves the rest to the graph you write.</p>
       <a class="more" href="reports/loop-detection/">Read the full report &rarr;</a>
     </div>
@@ -145,7 +145,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
   <section class="cols">
     <article class="col">
       <p class="kicker">Deep dive</p>
-      <p class="byline">Gemini CLI &middot; <b>5 verified excerpts</b></p>
+      <p class="byline">Gemini CLI &middot; <b>43 reviewed claims</b></p>
       <h3><a href="reports/chat-compression/">How Gemini CLI compresses chat history</a></h3>
       <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
       <p>It then asks the model to critique its own summary. If the new history has more tokens than the old one, it is thrown away, and automatic attempts stop calling the summariser until a new chat starts.</p>

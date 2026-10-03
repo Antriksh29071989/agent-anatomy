@@ -1,0 +1,320 @@
+{
+ "reviewer": "independent reviewer agent",
+ "reviewed_at": "2026-10-03",
+ "prose_hash": "2fa447d9fd3b73b1",
+ "results": [
+  {
+   "id": "g-key",
+   "verdict": "supported",
+   "note": "",
+   "hash": "5dda03f950cad67f"
+  },
+  {
+   "id": "g-toolthr",
+   "verdict": "supported",
+   "note": "",
+   "hash": "cf2bc6db80342cc5"
+  },
+  {
+   "id": "g-cycle",
+   "verdict": "supported",
+   "note": "",
+   "hash": "8f61b5e2ea666065"
+  },
+  {
+   "id": "g-contentconst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b3abfd881b7e298f"
+  },
+  {
+   "id": "g-contentdoc",
+   "verdict": "supported",
+   "note": "",
+   "hash": "7e8f6fe05d05fa20"
+  },
+  {
+   "id": "g-contentthr",
+   "verdict": "supported",
+   "note": "",
+   "hash": "38d454976ac5876c"
+  },
+  {
+   "id": "g-events",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c22a57b219d9f3be"
+  },
+  {
+   "id": "g-llmgate",
+   "verdict": "supported",
+   "note": "",
+   "hash": "a96a701d07f08ee3"
+  },
+  {
+   "id": "g-llmconst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ccad3f496a67da2f"
+  },
+  {
+   "id": "g-interval",
+   "verdict": "supported",
+   "note": "",
+   "hash": "a50f164da9a2f564"
+  },
+  {
+   "id": "g-conf",
+   "verdict": "supported",
+   "note": "",
+   "hash": "5699cdc7232bd5d2"
+  },
+  {
+   "id": "g-history",
+   "verdict": "supported",
+   "note": "",
+   "hash": "901d51931ef6f19f"
+  },
+  {
+   "id": "g-below",
+   "verdict": "supported",
+   "note": "",
+   "hash": "90e77b48094d0eec"
+  },
+  {
+   "id": "g-unavailable",
+   "verdict": "supported",
+   "note": "",
+   "hash": "36f4980e0dc895d8"
+  },
+  {
+   "id": "g-double",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0ec382728d7d3bc2"
+  },
+  {
+   "id": "g-confirm",
+   "verdict": "supported",
+   "note": "",
+   "hash": "634de7280f37e0cc"
+  },
+  {
+   "id": "g-adapt",
+   "verdict": "supported",
+   "note": "",
+   "hash": "17a9f48c7e8e8e30"
+  },
+  {
+   "id": "g-turnstart",
+   "verdict": "supported",
+   "note": "",
+   "hash": "7eb7af8806edce9e"
+  },
+  {
+   "id": "g-recover",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0a0b11c8a423d336"
+  },
+  {
+   "id": "g-maxturns",
+   "verdict": "supported",
+   "note": "",
+   "hash": "5f04de6210a44453"
+  },
+  {
+   "id": "g-disable",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d32ab9a23501ea58"
+  },
+  {
+   "id": "o-window",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f5ad89d79586ff90"
+  },
+  {
+   "id": "o-windowconst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d14a2143037b90aa"
+  },
+  {
+   "id": "o-thr",
+   "verdict": "supported",
+   "note": "",
+   "hash": "08c0569f1a1ea90f"
+  },
+  {
+   "id": "o-scenarios",
+   "verdict": "supported",
+   "note": "Supported. Advisory: the fourth and fifth calls are gated by `len(events) >= self.alternating_pattern_threshold` (line 145) and `len(events) >= 10` (line 150).",
+   "hash": "d104ba1421210a6a"
+  },
+  {
+   "id": "o-s1",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d9a938c2701fb2a2"
+  },
+  {
+   "id": "o-s2",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e8a4878833932ce3"
+  },
+  {
+   "id": "o-nudge",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f3e314727fd522c4"
+  },
+  {
+   "id": "o-mono",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e071ea041fc426ac"
+  },
+  {
+   "id": "o-run",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f47fec9736c11f72"
+  },
+  {
+   "id": "o-defaults",
+   "verdict": "supported",
+   "note": "",
+   "hash": "858ce1a7f1a3cd3c"
+  },
+  {
+   "id": "o-maxiter",
+   "verdict": "supported",
+   "note": "",
+   "hash": "db400ff26c557207"
+  },
+  {
+   "id": "l-default",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b959ef675363d01a"
+  },
+  {
+   "id": "l-stop",
+   "verdict": "supported",
+   "note": "",
+   "hash": "68dda0cc5e814034"
+  },
+  {
+   "id": "l-tick",
+   "verdict": "supported",
+   "note": "",
+   "hash": "86d6871768a4b3d6"
+  },
+  {
+   "id": "l-raise",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1c8e6523d0ae8f75"
+  },
+  {
+   "id": "l-more",
+   "verdict": "supported",
+   "note": "Supported as written. Advisory: because `all([])` is True, the `remaining_steps < 1` branch (line 629) also fires for an AIMessage with no tool calls.",
+   "hash": "b29034989dd603e2"
+  },
+  {
+   "id": "l-sorry",
+   "verdict": "supported",
+   "note": "",
+   "hash": "581dcbbcabf47aa7"
+  },
+  {
+   "id": "l-deprecated",
+   "verdict": "supported",
+   "note": "",
+   "hash": "92ee8bd9a6a7f4f5"
+  },
+  {
+   "id": "x-doc",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3274c3db3b8059b4"
+  },
+  {
+   "id": "x-comment",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d2e5ba2cccfd6b80"
+  },
+  {
+   "id": "x-exit",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b90cec576866a84c"
+  },
+  {
+   "id": "g-cap",
+   "verdict": "supported",
+   "note": "",
+   "hash": "33bfdde5b0ecac1c"
+  },
+  {
+   "id": "o-stub",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c519b31fd92be62b"
+  },
+  {
+   "id": "o-streak",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e8607f6ed050aa32"
+  },
+  {
+   "id": "o-alt",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6aad2899648b18ee"
+  },
+  {
+   "id": "o-thrparam",
+   "verdict": "supported",
+   "note": "",
+   "hash": "75de004471978438"
+  },
+  {
+   "id": "l-defaultuse",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c222bc9006554954"
+  },
+  {
+   "id": "l-end",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6908d7ffa4fb3be4"
+  },
+  {
+   "id": "x-followup",
+   "verdict": "supported",
+   "note": "",
+   "hash": "936cc6c76be9866d"
+  },
+  {
+   "id": "x-break",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1227794b8d45c10f"
+  },
+  {
+   "id": "x-continue",
+   "verdict": "supported",
+   "note": "",
+   "hash": "192038f284dd9a8d"
+  }
+ ],
+ "uncited": []
+}

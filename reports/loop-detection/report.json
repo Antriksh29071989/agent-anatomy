@@ -4,10 +4,10 @@
   "title": "Loop detection",
   "slug": "loop-detection",
   "analysed_at": "2026-10-03",
-  "hook": "Gemini CLI asks a second model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.",
+  "hook": "Gemini CLI asks a model if the agent is looping. OpenHands matches patterns. LangGraph just counts steps.",
   "site_url": "https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/"
  },
- "answer": "There is no single technique. Gemini CLI runs three detectors at once: hashed tool-call cycles, repeated text, and a periodic model-based check that a second model must confirm. OpenHands matches five patterns over the recent event history. Both warn the model once before stopping it. LangGraph has no behavioural detection, only a step budget, and no loop detector was found in Codex.",
+ "answer": "There is no single technique. Gemini CLI runs three detectors: hashed tool-call cycles [^g-cycle], repeated text [^g-contentdoc], and a periodic model-based check [^g-llmgate] that a second model is asked to confirm [^g-double]. OpenHands matches rule-based patterns over the recent event history [^o-scenarios]. Gemini CLI warns the model on a first detection [^g-turnstart][^g-recover], and OpenHands does so for repeated errors [^o-nudge]. LangGraph has no behavioural detection, only a step budget [^l-tick], and no loop detector was found in Codex.",
  "repos": [
   {
    "id": "gemini-cli",
@@ -19,7 +19,7 @@
    "license": "Apache-2.0",
    "what": "Google's terminal coding agent",
    "verdict": "implements",
-   "summary": "A dedicated `LoopDetectionService` with three independent detectors, a one-time recovery message, and a hard stop on the second detection."
+   "summary": "A dedicated `LoopDetectionService` with three detectors [^g-cycle][^g-contentdoc][^g-llmgate], a one-time recovery message [^g-recover], and a hard stop on the second detection [^g-turnstart]."
   },
   {
    "id": "openhands",
@@ -31,7 +31,7 @@
    "license": "MIT",
    "what": "The agent SDK and server behind OpenHands (the OpenHands/OpenHands repository is now the UI)",
    "verdict": "implements",
-   "summary": "A `StuckDetector` that compares recent actions and observations against five stuck patterns, nudges the model on repeated errors, and otherwise marks the conversation `STUCK`."
+   "summary": "A `StuckDetector` that tests recent actions and observations against a set of stuck patterns [^o-scenarios], four of which are implemented [^o-stub]. It nudges the model on a repeated error [^o-nudge] and otherwise marks the conversation `STUCK` [^o-run]."
   },
   {
    "id": "langgraph",
@@ -43,7 +43,7 @@
    "license": "MIT",
    "what": "Graph-based agent orchestration framework",
    "verdict": "delegates",
-   "summary": "The runtime does not look at behaviour. It counts steps and raises `GraphRecursionError` at the limit; recognising an unproductive loop is left to the graph you write."
+   "summary": "The runtime does not look at behaviour. It counts steps [^l-tick] and raises `GraphRecursionError` at the limit [^l-raise]; recognising an unproductive loop is left to the graph you write."
   },
   {
    "id": "codex",
@@ -55,7 +55,7 @@
    "license": "Apache-2.0",
    "what": "OpenAI's terminal coding agent",
    "verdict": "absent",
-   "summary": "No loop detector or step cap was found in the core turn loop at this commit. A turn continues until the model stops asking for follow-up work or the user cancels."
+   "summary": "No loop detector or step cap was found in the core turn loop at this commit. Follow-up is needed when the model asks for it or input is pending [^x-followup]; when it is needed the loop goes round again [^x-continue], and there is a branch for when it is not [^x-exit]."
   }
  ],
  "comparison": {
@@ -70,31 +70,31 @@
    {
     "repo": "gemini-cli",
     "cells": [
-     "Three detectors in one service: exact tool-call cycles, repeated text, and a model acting as judge",
-     "A hash of each tool call's name and arguments; 50-character chunks of streamed text; the last 20 turns",
-     "A cycle of length 1 to 5 repeated 5 times; a chunk repeated 10 times close together; judge starts after 30 turns and needs confidence of 0.9 or more",
-     "Injects a `Potential loop detected` message and lets the model continue",
-     "A second detection ends the turn with a `LoopDetected` event. Separate cap of 100 turns per prompt"
+     "Three detectors in one service: exact tool-call cycles [^g-cycle], repeated text [^g-contentdoc], and a model acting as judge [^g-llmgate]",
+     "A hash of each tool call's name and arguments [^g-key]; 50-character chunks of streamed text [^g-contentconst]; the last 20 history entries [^g-llmconst]",
+     "A cycle of length 1 to 5 repeated 5 times [^g-cycle][^g-toolthr]; a chunk seen 10 times close together [^g-contentthr]; the judge starts after 30 turns [^g-llmconst] and needs confidence of 0.9 or more [^g-conf]",
+     "Injects a `Potential loop detected` message and lets the model continue [^g-recover]",
+     "A second detection ends the turn with a `LoopDetected` event [^g-turnstart]. Separately, a send is bounded to 100 turns [^g-maxturns][^g-cap]"
     ]
    },
    {
     "repo": "openhands",
     "cells": [
-     "Rule-based pattern matching over recent events",
-     "Actions, observations, errors and agent messages since the last user message",
-     "4 identical action and observation pairs; 3 identical action and error pairs; 3 agent messages in a row; 6 for an alternating pattern",
-     "On the third identical error, a nudge naming the tool and the error",
-     "Status set to `STUCK` and the run loop stops. Separate cap of 500 iterations per run"
+     "Rule-based pattern matching over recent events [^o-scenarios]",
+     "Actions, observations, errors and agent messages after the last user message, within a 20-event window [^o-window][^o-windowconst]",
+     "4 identical action and observation pairs [^o-s1]; the same action erroring more than 3 times in a row [^o-s2][^o-streak]; 3 consecutive agent messages [^o-mono]; 6 for the alternating pattern [^o-thr]",
+     "When the same action has errored exactly 3 times in a row, a nudge naming the tool and the latest error [^o-nudge][^o-streak]",
+     "Status set to `STUCK` and the check returns True [^o-run]. Separately, a cap of 500 iterations per run [^o-defaults][^o-maxiter]"
     ]
    },
    {
     "repo": "langgraph",
     "cells": [
-     "A step budget, no behavioural detection",
-     "The number of steps the graph has executed",
-     "`recursion_limit`, default 10007, configurable per run or by environment variable",
-     "The prebuilt ReAct agent answers `Sorry, need more steps to process this request.` when fewer than 2 steps remain",
-     "`GraphRecursionError` when the step count passes the limit"
+     "A step budget, no behavioural detection [^l-tick]",
+     "The number of steps the graph has executed [^l-stop]",
+     "`recursion_limit`, which defaults [^l-defaultuse] to 10007 or an environment variable's value [^l-default]",
+     "The prebuilt ReAct agent answers `Sorry, need more steps to process this request.` [^l-sorry] when fewer than 2 steps remain and the model asked for tool calls [^l-more]",
+     "`GraphRecursionError` when the step count passes the stop point [^l-tick][^l-raise]"
     ]
    },
    {
@@ -104,7 +104,7 @@
      "Not applicable",
      "Not applicable",
      "Not applicable",
-     "The turn loop exits when the model needs no follow-up, or on cancellation"
+     "The turn loop goes round again when follow-up is needed [^x-followup][^x-continue]"
     ]
    }
   ]
@@ -114,14 +114,14 @@
    "repo": "gemini-cli",
    "headline": "Three detectors, one warning, then a stop",
    "how_it_works": [
-    "Every stream event passes through `LoopDetectionService.addAndCheck`. For tool calls it hashes the tool name plus its JSON arguments with SHA-256 and appends the hash to a short history. It then looks for a repeating cycle: any pattern of length 1 to 5 that has repeated 5 times in a row. That catches `A A A A A` and also `A B A B A B A B A B`.",
-    "For model text, it slides over the stream in 50-character chunks, hashes each one, and flags a loop when the same chunk appears 10 times within a short distance. Tracking is switched off inside code blocks, where repetition is normal.",
-    "Neither catches an agent that keeps doing slightly different unproductive things. So once a single prompt has run for 30 turns, the service periodically sends the last 20 turns to a model with a diagnostic prompt and asks for a confidence score. At 0.9 or above, a second model alias has to agree before a loop is declared. The interval between checks adapts between 5 and 15 turns: the more suspicious the last result, the sooner the next check.",
-    "The response is graduated. On the first detection `GeminiClient` clears the flag, injects a system-style message telling the model a loop was detected, and continues. On the second detection it emits `LoopDetected` and ends the turn."
+    "Every stream event passes through `addAndCheck` [^g-events]. For tool calls the service hashes the tool name plus its JSON arguments with SHA-256 [^g-key] and looks for a repeating cycle: any pattern of length 1 to 5 that has repeated 5 times in a row [^g-cycle][^g-toolthr]. That catches `A A A A A` and also `A B A B A B A B A B`.",
+    "For model text, it works in 50-character chunks [^g-contentconst], hashes them, and flags a loop when identical chunks appear frequently within a short distance; detection is switched off inside code blocks [^g-contentdoc]. A chunk has to occur at least 10 times before its spacing is tested [^g-contentthr].",
+    "Neither catches an agent that keeps doing slightly different unproductive things. So once a single prompt has run for 30 turns [^g-llmconst][^g-llmgate], the service periodically sends recent history to a model [^g-history]. If that model's confidence is below 0.9, nothing is reported [^g-below][^g-conf]. At 0.9 or above, a second model alias is asked to double-check [^g-double], and a loop is reported if it also reaches the threshold [^g-confirm]. If the second model is unavailable, the first model's verdict is used alone [^g-unavailable]. The interval between checks adapts between 5 and 15 turns [^g-interval]: the higher the last confidence, the sooner the next check [^g-adapt].",
+    "The response is graduated. On the first detection `GeminiClient` clears the flag, injects a message telling the model a potential loop was detected, and continues [^g-recover], unless the turn budget is already used up, in which case it stops with `MaxSessionTurns` [^g-turnstart]. On the second detection it emits `LoopDetected` and ends the turn [^g-turnstart]."
    ],
    "diagram": {
-    "caption": "The first detection becomes a message to the model; only the second one stops it.",
-    "mermaid": "flowchart TB\n  ev[\"Stream event\"]:::external --> svc[\"LoopDetectionService<br/>addAndCheck\"]:::system\n  svc -->|\"tool call\"| tc[\"Hash name and args<br/>look for a repeated cycle\"]:::component\n  svc -->|\"text\"| ct[\"Hash 50-char chunks<br/>count close repeats\"]:::component\n  ts[\"Turn start<br/>after 30 turns\"]:::external --> llm[\"Model judge<br/>second model must confirm\"]:::component\n  tc --> hit[\"Loop detected<br/>count goes up\"]:::queue\n  ct --> hit\n  llm --> hit\n  hit -->|\"first time\"| rec[\"Inject warning message<br/>continue the turn\"]:::component\n  hit -->|\"second time\"| stop[\"LoopDetected event<br/>turn ends\"]:::store\n"
+    "caption": "A first detection normally becomes a message to the model [^g-recover]; a second one stops the turn [^g-turnstart].",
+    "mermaid": "flowchart TB\n  ev[\"Stream event\"]:::external --> svc[\"LoopDetectionService<br/>addAndCheck\"]:::system\n  svc -->|\"tool call\"| tc[\"Hash name and args<br/>look for a repeated cycle\"]:::component\n  svc -->|\"text\"| ct[\"Hash 50-char chunks<br/>count close repeats\"]:::component\n  ts[\"Turn start<br/>after 30 turns\"]:::external --> llm[\"Model judge<br/>second model double-checks\"]:::component\n  tc --> hit[\"Loop detected<br/>count goes up\"]:::queue\n  ct --> hit\n  llm --> hit\n  hit -->|\"first time\"| rec[\"Inject warning message<br/>continue the turn\"]:::component\n  hit -->|\"second time\"| stop[\"LoopDetected event<br/>turn ends\"]:::store\n"
    },
    "key_parts": [
     {
@@ -175,23 +175,24 @@
     }
    ],
    "gotchas": [
-    "Exact-match hashing means a tool call with one changed argument counts as a different call. The model-based check exists to cover that gap.",
-    "The model-based check costs extra model calls, which is why it waits 30 turns and backs off when confidence is low.",
-    "Loop detection can be disabled by configuration or for the rest of a session."
+    "The tool-call key is an exact hash of name and arguments [^g-key], so a call with one changed argument counts as a different call.",
+    "The model-based check costs extra model calls, and only starts after 30 turns in one prompt [^g-llmconst].",
+    "The double-check is skipped when the second model is unavailable: the first model's result is then enough to declare a loop [^g-unavailable].",
+    "Loop detection can be disabled by configuration or for the rest of a session [^g-disable]."
    ]
   },
   {
    "repo": "openhands",
-   "headline": "Five named patterns over the last few events",
+   "headline": "Four working patterns over a window of recent events",
    "how_it_works": [
-    "`StuckDetector.is_stuck` looks only at events since the last user message, so a new instruction resets the picture. It collects the most recent actions and observations and tests five scenarios in order.",
-    "The scenarios are: the same action producing the same observation 4 times; the same action producing an error more than 3 times; the agent sending 3 messages in a row with no action; a two-step alternating pattern over 6 events; and a loop of context-window errors.",
-    "Repeated errors get special treatment. When an action has failed with the same error exactly 3 times, `get_action_error_nudge` returns a message naming the tool and the error, which the conversation injects as a user-role message. The nudge fires once per streak. If the streak continues past the threshold, the conversation is marked stuck.",
-    "When a pattern matches, the run loop sets the execution status to `STUCK` and stops. Thresholds are a small config object that callers can override, and detection can be turned off when creating the conversation."
+    "`StuckDetector.is_stuck` looks only at events after the last user message, within a window of recent events [^o-window], so a new instruction resets the picture. It runs its checks in a fixed order [^o-scenarios].",
+    "Four checks are implemented: the same action producing the same observation [^o-s1]; the same action followed by an error more times than the threshold [^o-s2]; consecutive agent messages with no action [^o-mono]; and an alternating action-observation pattern [^o-alt]. A fifth, for context-window errors, is a stub that always returns False [^o-stub]. The default thresholds are 4, 3, 3 and 6 [^o-thr].",
+    "The error check counts how many times in a row the latest action has been followed by an error event; it does not compare the errors with each other [^o-streak]. When that streak is exactly 3, `get_action_error_nudge` returns a message naming the tool and the latest error, and it fires only once per error event [^o-nudge]. The conversation injects it as a user-role message [^o-run]. If the streak goes past the threshold, the conversation is stuck [^o-s2].",
+    "When a pattern matches, the run loop's check sets the execution status to `STUCK` and returns True [^o-run]. Detection can be switched off [^o-defaults] and the thresholds overridden [^o-thrparam] when creating the conversation."
    ],
    "diagram": {
-    "caption": "Repeated errors earn one nudge before the stop; the other patterns stop immediately.",
-    "mermaid": "flowchart TB\n  loop[\"Run loop iteration\"]:::external --> chk[\"_check_stuck_or_nudge\"]:::system\n  chk --> nudge{\"Same error<br/>exactly 3 times?\"}:::component\n  nudge -->|\"yes, first time\"| msg[\"Inject nudge message<br/>naming tool and error\"]:::component\n  nudge -->|\"no\"| det[\"StuckDetector.is_stuck\"]:::system\n  det --> p1[\"Same action, same result\"]:::component\n  det --> p2[\"Same action, same error\"]:::component\n  det --> p3[\"Monologue\"]:::component\n  det --> p4[\"Alternating pair\"]:::component\n  det --> p5[\"Context window errors\"]:::component\n  p1 --> stuck[\"Status STUCK<br/>run stops\"]:::store\n  p2 --> stuck\n  p3 --> stuck\n  p4 --> stuck\n  p5 --> stuck\n"
+    "caption": "A repeated error earns one nudge first [^o-nudge]; a matched pattern sets the stuck status [^o-run].",
+    "mermaid": "flowchart TB\n  loop[\"Run loop iteration\"]:::external --> chk[\"_check_stuck_or_nudge\"]:::system\n  chk --> nudge{\"Same action errored<br/>exactly 3 times?\"}:::component\n  nudge -->|\"yes, first time\"| msg[\"Inject nudge message<br/>naming tool and error\"]:::component\n  nudge -->|\"no\"| det[\"StuckDetector.is_stuck\"]:::system\n  det --> p1[\"Same action, same result\"]:::component\n  det --> p2[\"Same action, errors\"]:::component\n  det --> p3[\"Monologue\"]:::component\n  det --> p4[\"Alternating pair\"]:::component\n  p1 --> stuck[\"Status STUCK<br/>run stops\"]:::store\n  p2 --> stuck\n  p3 --> stuck\n  p4 --> stuck\n"
    },
    "key_parts": [
     {
@@ -258,18 +259,20 @@
     }
    ],
    "gotchas": [
-    "Only the most recent events are scanned (a constant caps it at 20), so a loop with a long period can go unnoticed.",
-    "There is no model-based check, so a semantically repetitive agent that varies its arguments is not detected."
+    "Only a window of 20 recent events is scanned [^o-window][^o-windowconst], so a loop with a long period can go unnoticed.",
+    "The context-window error check is not implemented at this commit: it returns False [^o-stub].",
+    "The error pattern matches any error after the same action, not the same error each time [^o-streak].",
+    "Every implemented check is a rule over event equality or counts [^o-s1][^o-streak][^o-mono][^o-alt]; no model-based check was found in the detector."
    ]
   },
   {
    "repo": "langgraph",
    "headline": "A step counter, and the rest is up to you",
    "how_it_works": [
-    "LangGraph runs a graph in steps. When a run starts, the loop computes a stop point: the current step plus `recursion_limit`. On each tick it checks whether the step has passed that point and, if so, sets its status to `out_of_steps`.",
-    "The caller then raises `GraphRecursionError`, with a message suggesting a higher limit. The default limit is read from an environment variable and is 10007 at this commit.",
-    "The prebuilt ReAct agent adds one courtesy on top. It tracks remaining steps in its state, and if the model asks for more tool calls with fewer than 2 steps left, it replaces the response with a short message saying it needs more steps, so the run ends cleanly without an exception.",
-    "Nothing here inspects what the agent is doing. If you want to notice the same tool being called repeatedly, you add that as a node or a check in your own graph."
+    "LangGraph runs a graph in steps. When a run starts, the loop computes a stop point: the current step plus `recursion_limit` plus 1 [^l-stop]. On each tick it checks whether the step has passed that point and, if so, sets its status to `out_of_steps` [^l-tick].",
+    "The caller then raises `GraphRecursionError`, with a message suggesting a higher limit [^l-raise]. The default limit [^l-defaultuse] is read from an environment variable and is 10007 at this commit [^l-default].",
+    "The prebuilt ReAct agent adds one courtesy on top. If the model asks for more tool calls with fewer than 2 steps remaining [^l-more], it replaces the response with a short message saying it needs more steps [^l-sorry]. That message has no tool calls, so the agent's routing does not go back to the tools [^l-end].",
+    "Nothing in these paths inspects what the agent is doing: the only test is the step count [^l-tick]. If you want to notice the same tool being called repeatedly, you add that as a node or a check in your own graph."
    ],
    "diagram": {
     "caption": "The only signal is the step count.",
@@ -329,17 +332,17 @@
     }
    ],
    "gotchas": [
-    "With a default of 10007 steps, the limit is a safety net against runaway graphs, not a loop detector. An agent can burn a lot of tokens long before reaching it.",
-    "Some state classes in the prebuilt module carry deprecation markers at this commit, so check the current recommended agent constructor before copying this pattern."
+    "With a default of 10007 steps [^l-default][^l-defaultuse], the limit is a safety net against runaway graphs, not a loop detector.",
+    "The prebuilt module's agent state classes carry deprecation markers at this commit [^l-deprecated], so check the current recommended agent constructor before copying this pattern."
    ]
   },
   {
    "repo": "codex",
    "headline": "No detector found: the loop trusts the model and compaction",
    "how_it_works": [
-    "Codex's core turn function runs a plain `loop`. Each pass sends a sampling request; if the model asked for tool calls, they are executed and the loop goes round again. It exits when the model returns only a message and nothing else is pending, or when the turn is cancelled.",
-    "No code was found in `codex-rs/core` that compares successive tool calls, counts repeats or caps the number of passes. The one place the code mentions an infinite loop is a comment about context growth: as long as compaction brings the context back under the token limit, the loop is not expected to run away.",
-    "So the safeguards at this layer are the model's own judgment, automatic compaction when the token limit is reached, and the user interrupting."
+    "Codex's core turn function runs a loop. Its documentation says the model replies with function calls or an assistant message, and a function call's output is sent back in the next sampling request [^x-doc]. Follow-up is needed when the model asks for it or input is pending [^x-followup], and in that case the loop continues to its next iteration [^x-continue]. It has a branch for when none is needed [^x-exit], and breaks when the stop outcome says to stop [^x-break].",
+    "No code was found in `codex-rs/core` that compares successive tool calls, counts repeats or caps the number of passes. The one place the code mentions an infinite loop is a comment about compaction keeping the context below the token limit [^x-comment].",
+    "So at this layer nothing was found that judges whether the agent is making progress."
    ],
    "key_parts": [
     {
@@ -369,7 +372,7 @@
      "start": 653,
      "end": 654,
      "expect": "needs_follow_up",
-     "title": "The exit condition"
+     "title": "The branch taken when no follow-up is needed"
     }
    ],
    "searched": [
@@ -383,15 +386,15 @@
  "differences": [
   {
    "title": "Exact match versus judgment",
-   "detail": "Gemini CLI and OpenHands both start with exact matching, which is cheap and has few false positives. Only Gemini CLI adds a model as judge for loops that exact matching cannot see, and it pays for that with extra model calls."
+   "detail": "Gemini CLI and OpenHands both start with exact matching [^g-key][^o-s1], which is cheap. Only Gemini CLI adds a model as judge for loops that exact matching cannot see [^g-llmgate], and it pays for that with extra model calls."
   },
   {
    "title": "Call only, or call plus result",
-   "detail": "Gemini CLI hashes the tool call alone. OpenHands requires the observation to match too, so polling a command whose output changes is not treated as a loop."
+   "detail": "Gemini CLI hashes the tool call alone [^g-key]. OpenHands requires the observations to match too [^o-s1], so polling a command whose output changes is not treated as a loop."
   },
   {
-   "title": "Both warn before they stop",
-   "detail": "Gemini CLI injects a warning on the first detection and stops on the second. OpenHands nudges on repeated errors and stops on the other patterns. Neither kills the run at the first sign."
+   "title": "Both can warn before they stop",
+   "detail": "Gemini CLI injects a warning on the first detection [^g-recover] and stops on the second [^g-turnstart]. OpenHands nudges only for a repeated error [^o-nudge]; a matched pattern sets the stuck status [^o-run]."
   },
   {
    "title": "Products detect, the framework budgets",
@@ -399,14 +402,14 @@
   },
   {
    "title": "How long before a hard cap",
-   "detail": "The step caps differ by two orders of magnitude: 100 turns per prompt in Gemini CLI, 500 iterations per run in OpenHands, 10007 steps by default in LangGraph."
+   "detail": "The step caps differ by two orders of magnitude: 100 turns per send in Gemini CLI [^g-maxturns][^g-cap], 500 iterations per run in OpenHands [^o-defaults], 10007 steps by default in LangGraph [^l-default][^l-defaultuse]."
   }
  ],
  "build_your_own": [
   "Start with a step cap. It is one line, and it is the only protection LangGraph gives you by default.",
   "Add exact-match detection on tool calls: hash the name and arguments, keep a short history, and look for cycles, not only identical consecutive calls. Gemini CLI's version is under 40 lines.",
   "Compare results as well as calls if your agent legitimately polls. OpenHands' action-plus-observation rule avoids that false positive.",
-  "Warn the model once before stopping it. Both implementations do, and a message naming the tool and the error gives the model something to act on.",
+  "Warn the model before stopping it. Gemini CLI does this on a first detection and OpenHands on repeated errors, and a message naming the tool and the error gives the model something to act on.",
   "Give 'stuck' its own status, separate from error and finished, so callers and UIs can respond differently.",
   "Only add a model-based check if exact matching is missing real loops, and gate it the way Gemini CLI does: after many turns, at a high confidence threshold, confirmed by a second model."
  ],
@@ -416,7 +419,426 @@
    "OpenHands refers to the `OpenHands/software-agent-sdk` repository, where the agent logic lives; the `OpenHands/OpenHands` repository is now the user interface.",
    "The Codex finding is 'not found in the core crate', not proof of absence across the whole product.",
    "Gemini CLI's text-repetition detector and the internals of its model-based check were read but are not quoted in full.",
-   "Behaviour was read from source, not observed by running the agents."
+   "Behaviour was read from source, not observed by running the agents.",
+   "OpenHands' context-window error check is a stub at this commit, so the report counts four working patterns."
   ]
+ },
+ "citations": {
+  "g-key": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 174,
+   "end": 178,
+   "expect": "sha256",
+   "claim": "A tool call's key is the SHA-256 hash of its name joined with the JSON string of its arguments."
+  },
+  "g-toolthr": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 29,
+   "end": 29,
+   "expect": "TOOL_CALL_LOOP_THRESHOLD = 5",
+   "claim": "The tool-call loop threshold is 5."
+  },
+  "g-cycle": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 322,
+   "end": 346,
+   "expect": "cycle",
+   "claim": "For each cycle length from 1 to 5, a loop is reported when the last calls match that cycle repeated the threshold number of times."
+  },
+  "g-contentconst": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 30,
+   "end": 31,
+   "expect": "CONTENT_CHUNK_SIZE = 50",
+   "claim": "The content loop threshold is 10 and the content chunk size is 50."
+  },
+  "g-contentdoc": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 351,
+   "end": 361,
+   "expect": "code blocks",
+   "claim": "Content loop detection hashes chunks of streamed text, detects identical chunks that appear frequently within a short distance, and is disabled inside code blocks."
+  },
+  "g-contentthr": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 493,
+   "end": 502,
+   "expect": "CONTENT_LOOP_THRESHOLD",
+   "claim": "A chunk is only considered once it has occurred at least the content threshold number of times, and the most recent occurrences are then tested for how close together they are."
+  },
+  "g-events": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 826,
+   "end": 840,
+   "expect": "addAndCheck",
+   "claim": "Each stream event is passed to `addAndCheck`; a count above 1 yields `LoopDetected` and stops, and a count of exactly 1 stops for recovery unless the remaining turn budget is 1 or less."
+  },
+  "g-llmgate": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 275,
+   "end": 283,
+   "expect": "LLM_CHECK_AFTER_TURNS",
+   "claim": "At the start of a turn, the model-based check runs only when the turns in the current prompt have reached `LLM_CHECK_AFTER_TURNS` and at least `llmCheckInterval` turns have passed since the last check."
+  },
+  "g-llmconst": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 34,
+   "end": 42,
+   "expect": "LLM_CHECK_AFTER_TURNS = 30",
+   "claim": "The model-based check includes the 20 most recent turns and is activated after 30 turns in a single prompt."
+  },
+  "g-interval": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 44,
+   "end": 60,
+   "expect": "MAX_LLM_CHECK_INTERVAL = 15",
+   "claim": "The check interval defaults to 10 turns, with a minimum of 5 and a maximum of 15."
+  },
+  "g-conf": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 62,
+   "end": 66,
+   "expect": "LLM_CONFIDENCE_THRESHOLD = 0.9",
+   "claim": "The confidence threshold for the model-based check is 0.9, and the double-check model alias is `loop-detection-double-check`."
+  },
+  "g-history": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 568,
+   "end": 570,
+   "expect": "LLM_LOOP_CHECK_HISTORY_COUNT",
+   "claim": "The model-based check takes the last `LLM_LOOP_CHECK_HISTORY_COUNT` entries of the client's history."
+  },
+  "g-below": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 625,
+   "end": 637,
+   "expect": "flashConfidence < LLM_CONFIDENCE_THRESHOLD",
+   "claim": "If the first model's confidence is below the threshold, the check interval is updated and no loop is reported."
+  },
+  "g-unavailable": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 641,
+   "end": 651,
+   "expect": "available",
+   "claim": "If the double-check model is not available, a loop is reported on the first model's result alone."
+  },
+  "g-double": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 653,
+   "end": 658,
+   "expect": "DOUBLE_CHECK_MODEL_ALIAS",
+   "claim": "Otherwise the same contents are sent to the double-check model."
+  },
+  "g-confirm": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 683,
+   "end": 695,
+   "expect": "mainModelConfidence >= LLM_CONFIDENCE_THRESHOLD",
+   "claim": "When the double-check model returns a result with confidence at or above the threshold, a loop is reported; when it returns a result below the threshold, the interval is updated; in every other case no loop is reported."
+  },
+  "g-adapt": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 733,
+   "end": 739,
+   "expect": "updateCheckInterval",
+   "claim": "The next check interval is the minimum plus the range multiplied by one minus the confidence, so higher confidence gives a shorter interval."
+  },
+  "g-turnstart": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 761,
+   "end": 775,
+   "expect": "_recoverFromLoop",
+   "claim": "At the start of a turn, a detection count above 1 yields `LoopDetected` and returns; a count of exactly 1 goes to `_recoverFromLoop`, unless the turn budget is 1 or less."
+  },
+  "g-recover": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 1291,
+   "end": 1311,
+   "expect": "Potential loop detected",
+   "claim": "Recovery clears the detection flag, builds a feedback message beginning `System: Potential loop detected`, and calls `sendMessageStream` again with that message and one fewer bounded turn."
+  },
+  "g-maxturns": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 79,
+   "end": 79,
+   "expect": "MAX_TURNS = 100",
+   "claim": "`MAX_TURNS` is 100."
+  },
+  "g-disable": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/loopDetectionService.ts",
+   "start": 261,
+   "end": 266,
+   "expect": "getDisableLoopDetection",
+   "claim": "The turn-start check returns a count of 0 when detection is disabled for the session or by configuration."
+  },
+  "o-window": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 66,
+   "end": 84,
+   "expect": "MAX_EVENTS_TO_SCAN_FOR_STUCK_DETECTION",
+   "claim": "The detector reads a window of recent events limited by `MAX_EVENTS_TO_SCAN_FOR_STUCK_DETECTION` and keeps only those after the last user message."
+  },
+  "o-windowconst": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 19,
+   "end": 21,
+   "expect": "= 20",
+   "claim": "`MAX_EVENTS_TO_SCAN_FOR_STUCK_DETECTION` is 20."
+  },
+  "o-thr": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/types.py",
+   "start": 150,
+   "end": 161,
+   "expect": "default=4",
+   "claim": "The default thresholds are 4 for action-observation, 3 for action-error, 3 for monologue and 6 for the alternating pattern."
+  },
+  "o-scenarios": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 130,
+   "end": 153,
+   "expect": "scenario 5",
+   "claim": "`is_stuck` calls five checks in order: same action and observation, same action with errors, monologue, alternating action-observation, and a context window error check."
+  },
+  "o-s1": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 163,
+   "end": 183,
+   "expect": "Action, Observation loop detected",
+   "claim": "Scenario 1 reports stuck when the most recent threshold actions are all equal and the most recent threshold observations are all equal."
+  },
+  "o-s2": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 208,
+   "end": 215,
+   "expect": "Action, Error loop detected",
+   "claim": "Scenario 2 reports stuck when the action-error streak is greater than the threshold."
+  },
+  "o-nudge": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 226,
+   "end": 248,
+   "expect": "same error each",
+   "claim": "A nudge is returned when the action-error streak equals the threshold exactly and that error event has not been nudged before; its text names the tool and the error."
+  },
+  "o-mono": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 259,
+   "end": 275,
+   "expect": "agent_message_count >= threshold",
+   "claim": "The monologue check counts consecutive agent messages, stopping at a user message or any action or observation, and reports stuck when the count reaches the threshold."
+  },
+  "o-run": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py",
+   "start": 744,
+   "end": 767,
+   "expect": "_check_stuck_or_nudge",
+   "claim": "`_check_stuck_or_nudge` first emits any nudge as a user-role message and returns False; otherwise, if `is_stuck()` is true, it sets the execution status to STUCK and returns True."
+  },
+  "o-defaults": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py",
+   "start": 219,
+   "end": 220,
+   "expect": "stuck_detection: bool = True",
+   "claim": "The local conversation defaults to `max_iteration_per_run` of 500 and `stuck_detection` of True."
+  },
+  "o-maxiter": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py",
+   "start": 2024,
+   "end": 2038,
+   "expect": "maximum iterations limit",
+   "claim": "When the iteration count reaches `max_iteration_per_run` and the run has not finished, the status is set to ERROR with a maximum-iterations message."
+  },
+  "l-default": {
+   "repo": "langgraph",
+   "path": "libs/langgraph/langgraph/_internal/_config.py",
+   "start": 32,
+   "end": 32,
+   "expect": "DEFAULT_RECURSION_LIMIT",
+   "claim": "`DEFAULT_RECURSION_LIMIT` is read from the `LANGGRAPH_DEFAULT_RECURSION_LIMIT` environment variable and defaults to 10007."
+  },
+  "l-stop": {
+   "repo": "langgraph",
+   "path": "libs/langgraph/langgraph/pregel/_loop.py",
+   "start": 1728,
+   "end": 1729,
+   "expect": "recursion_limit",
+   "claim": "The loop's stop step is set to the current step plus the configured `recursion_limit` plus 1."
+  },
+  "l-tick": {
+   "repo": "langgraph",
+   "path": "libs/langgraph/langgraph/pregel/_loop.py",
+   "start": 616,
+   "end": 619,
+   "expect": "out_of_steps",
+   "claim": "On each tick, if the step is greater than the stop step, the status is set to `out_of_steps` and the tick returns False."
+  },
+  "l-raise": {
+   "repo": "langgraph",
+   "path": "libs/langgraph/langgraph/pregel/main.py",
+   "start": 2990,
+   "end": 2999,
+   "expect": "GraphRecursionError",
+   "claim": "When the loop status is `out_of_steps`, a `GraphRecursionError` is raised with a message suggesting a higher `recursion_limit`."
+  },
+  "l-more": {
+   "repo": "langgraph",
+   "path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py",
+   "start": 620,
+   "end": 634,
+   "expect": "_are_more_steps_needed",
+   "claim": "`_are_more_steps_needed` returns True when remaining steps are below 2 and the response has tool calls, or below 1 when all tool calls return directly."
+  },
+  "l-sorry": {
+   "repo": "langgraph",
+   "path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py",
+   "start": 684,
+   "end": 692,
+   "expect": "Sorry, need more steps",
+   "claim": "When more steps are needed, the agent returns a message with the content `Sorry, need more steps to process this request.`"
+  },
+  "l-deprecated": {
+   "repo": "langgraph",
+   "path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py",
+   "start": 53,
+   "end": 69,
+   "expect": "@deprecated",
+   "claim": "The `AgentState` and `AgentStatePydantic` classes in the prebuilt module are marked deprecated."
+  },
+  "x-doc": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 149,
+   "end": 160,
+   "expect": "runs a loop",
+   "claim": "The turn function's documentation says it runs a loop in which the model replies with function calls or an assistant message, and function call output is sent back in the next sampling request."
+  },
+  "x-comment": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 612,
+   "end": 613,
+   "expect": "infinite loop",
+   "claim": "A comment says that as long as compaction brings the context well below the token limit, an infinite loop is not a concern."
+  },
+  "x-exit": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 653,
+   "end": 654,
+   "expect": "needs_follow_up",
+   "claim": "The loop has a branch that is entered when no follow-up is needed."
+  },
+  "g-cap": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 974,
+   "end": 974,
+   "expect": "Math.min(turns, MAX_TURNS)",
+   "claim": "The number of turns for a send is bounded to at most `MAX_TURNS`."
+  },
+  "o-stub": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 314,
+   "end": 323,
+   "expect": "return False",
+   "claim": "`_is_stuck_context_window_error` contains only a TODO comment and returns False."
+  },
+  "o-streak": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 198,
+   "end": 205,
+   "expect": "AgentErrorEvent",
+   "claim": "The action-error streak counts the most recent pairs whose action equals the latest action and whose observation is an `AgentErrorEvent`; the errors are not compared with each other."
+  },
+  "o-alt": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/stuck_detector.py",
+   "start": 299,
+   "end": 310,
+   "expect": "Alternating Action, Observation loop detected",
+   "claim": "The alternating check reports stuck when each recent action equals the action two positions before it and each recent observation equals the observation two positions before it."
+  },
+  "o-thrparam": {
+   "repo": "openhands",
+   "path": "openhands-sdk/openhands/sdk/conversation/impl/local_conversation.py",
+   "start": 221,
+   "end": 223,
+   "expect": "stuck_detection_thresholds",
+   "claim": "The local conversation accepts a `stuck_detection_thresholds` parameter."
+  },
+  "l-defaultuse": {
+   "repo": "langgraph",
+   "path": "libs/langgraph/langgraph/_internal/_config.py",
+   "start": 331,
+   "end": 336,
+   "expect": "recursion_limit=DEFAULT_RECURSION_LIMIT",
+   "claim": "The default run config sets `recursion_limit` to `DEFAULT_RECURSION_LIMIT`."
+  },
+  "l-end": {
+   "repo": "langgraph",
+   "path": "libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py",
+   "start": 831,
+   "end": 841,
+   "expect": "return END",
+   "claim": "`should_continue` does not route to tools when the last message is not an AI message with tool calls: it returns a post-model hook, a structured-response step, or END."
+  },
+  "x-followup": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 566,
+   "end": 566,
+   "expect": "model_needs_follow_up || has_pending_input",
+   "claim": "Follow-up is needed when the model needs follow-up or there is pending input."
+  },
+  "x-break": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 700,
+   "end": 701,
+   "expect": "break",
+   "claim": "The loop breaks when the stop outcome says it should stop."
+  },
+  "x-continue": {
+   "repo": "codex",
+   "path": "codex-rs/core/src/session/turn.rs",
+   "start": 755,
+   "end": 757,
+   "expect": "continue",
+   "claim": "After the no-follow-up block ends with a break, the loop continues to its next iteration."
+  }
  }
 }
