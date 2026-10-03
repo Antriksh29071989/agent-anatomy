@@ -518,5 +518,207 @@
    "expect": "</state_snapshot>",
    "claim": "The `<task_state>` section is the last section before the closing `</state_snapshot>` tag."
   }
+ },
+ "implementation": {
+  "title": "Chat compression in about 140 lines of Python",
+  "intro": "Five small functions and a caller class, standard library only. It follows Gemini CLI's procedure step for step: threshold check, tool-output budget, safe split, snapshot, self-critique, size guard and the failure flag. You pass in the function that calls your model.",
+  "dir": "impl",
+  "files": [
+   "chat_compressor.py",
+   "test_chat_compressor.py"
+  ],
+  "run": "python3 -m unittest -v",
+  "mirrors": [
+   {
+    "id": "threshold",
+    "what": "Compression starts at 0.5 of the token limit",
+    "file": "chat_compressor.py",
+    "start": 16,
+    "end": 16,
+    "expect": "DEFAULT_COMPRESSION_TOKEN_THRESHOLD = 0.5",
+    "citation": "threshold"
+   },
+   {
+    "id": "tokens",
+    "what": "Use the last prompt's token count when there is one, else an estimate",
+    "file": "chat_compressor.py",
+    "start": 81,
+    "end": 81,
+    "expect": "last_prompt_tokens",
+    "citation": "tokens"
+   },
+   {
+    "id": "trigger",
+    "what": "Unless forced, do nothing below threshold times the token limit",
+    "file": "chat_compressor.py",
+    "start": 82,
+    "end": 83,
+    "expect": "threshold * token_limit",
+    "citation": "trigger"
+   },
+   {
+    "id": "truncfirst",
+    "what": "Trim tool outputs across the whole history before splitting",
+    "file": "chat_compressor.py",
+    "start": 85,
+    "end": 85,
+    "expect": "truncate_history_to_budget",
+    "citation": "truncfirst"
+   },
+   {
+    "id": "walk",
+    "what": "Walk the history from newest to oldest",
+    "file": "chat_compressor.py",
+    "start": 40,
+    "end": 42,
+    "expect": "reversed(history)",
+    "citation": "walk"
+   },
+   {
+    "id": "budget",
+    "what": "Tool responses get a 50,000-token budget",
+    "file": "chat_compressor.py",
+    "start": 18,
+    "end": 18,
+    "expect": "50_000",
+    "citation": "budget"
+   },
+   {
+    "id": "overbudget",
+    "what": "A response that would exceed the budget is replaced by a shortened one",
+    "file": "chat_compressor.py",
+    "start": 46,
+    "end": 49,
+    "expect": "used + tokens > FUNCTION_RESPONSE_TOKEN_BUDGET",
+    "citation": "overbudget"
+   },
+   {
+    "id": "truncfmt",
+    "what": "Shortening keeps the first 20% and last 80% of a character limit, and leaves short output alone",
+    "file": "chat_compressor.py",
+    "start": 27,
+    "end": 34,
+    "expect": "0.2",
+    "citation": "truncfmt"
+   },
+   {
+    "id": "trunconly",
+    "what": "After an earlier failure, an unforced attempt truncates only and never calls the model",
+    "file": "chat_compressor.py",
+    "start": 86,
+    "end": 89,
+    "expect": "CONTENT_TRUNCATED",
+    "citation": "trunconly"
+   },
+   {
+    "id": "splitcall",
+    "what": "Split at 1 minus the preserve fraction, 0.7",
+    "file": "chat_compressor.py",
+    "start": 91,
+    "end": 91,
+    "expect": "1 - COMPRESSION_PRESERVE_THRESHOLD",
+    "citation": "splitcall"
+   },
+   {
+    "id": "splitrule",
+    "what": "Split only at a user message with no tool response, once the size target is reached",
+    "file": "chat_compressor.py",
+    "start": 62,
+    "end": 68,
+    "expect": "is_plain_user",
+    "citation": "splitrule"
+   },
+   {
+    "id": "splitall",
+    "what": "Otherwise compress everything only if the last message is a model message with no tool call",
+    "file": "chat_compressor.py",
+    "start": 69,
+    "end": 72,
+    "expect": "len(history)",
+    "citation": "splitall"
+   },
+   {
+    "id": "snapshot",
+    "what": "Ask for a state snapshot, integrating an earlier one if present",
+    "file": "chat_compressor.py",
+    "start": 96,
+    "end": 102,
+    "expect": "<state_snapshot>",
+    "citation": "snapshot"
+   },
+   {
+    "id": "verify",
+    "what": "A second call asks the model to critically evaluate its snapshot, and to repeat it unchanged if nothing is missing",
+    "file": "chat_compressor.py",
+    "start": 103,
+    "end": 107,
+    "expect": "Critically evaluate",
+    "citation": "verify"
+   },
+   {
+    "id": "final",
+    "what": "Use the second answer, falling back to the first",
+    "file": "chat_compressor.py",
+    "start": 108,
+    "end": 108,
+    "expect": "or summary",
+    "citation": "final"
+   },
+   {
+    "id": "empty",
+    "what": "An empty summary changes nothing",
+    "file": "chat_compressor.py",
+    "start": 109,
+    "end": 110,
+    "expect": "COMPRESSION_FAILED_EMPTY_SUMMARY",
+    "citation": "empty"
+   },
+   {
+    "id": "newhistory",
+    "what": "New history: the summary as a user message, a fixed model reply, then the kept turns",
+    "file": "chat_compressor.py",
+    "start": 112,
+    "end": 113,
+    "expect": "ACK",
+    "citation": "newhistory"
+   },
+   {
+    "id": "inflated",
+    "what": "Reject the result only if it has more tokens than the original",
+    "file": "chat_compressor.py",
+    "start": 114,
+    "end": 115,
+    "expect": "> original",
+    "citation": "inflated"
+   },
+   {
+    "id": "flag",
+    "what": "An unforced size failure sets the flag",
+    "file": "chat_compressor.py",
+    "start": 131,
+    "end": 132,
+    "expect": "or not force",
+    "citation": "flag"
+   },
+   {
+    "id": "reset",
+    "what": "Starting the new chat clears the flag",
+    "file": "chat_compressor.py",
+    "start": 133,
+    "end": 134,
+    "expect": "False",
+    "citation": "reset"
+   }
+  ],
+  "simplifications": [
+   "Python, not TypeScript: the logic is rewritten, not copied.",
+   "Token estimates are characters divided by four, which is cruder than the original's estimator. As in the original, the last prompt's reported token count is used when you supply one.",
+   "The size guard counts the tokens of the summary, the acknowledgement and the kept turns. The original counts the full initial chat history built around them, which includes its startup context.",
+   "Truncated tool output is not saved to a file, and the character limit is a fixed parameter instead of the smaller of a setting and the remaining context.",
+   "The summariser is any function you pass in. The original's system prompt, with its required snapshot sections and its rule to ignore instructions in the history, is not included.",
+   "The two instructions sent to the summariser are shortened paraphrases of the original's; they keep the same requests, including repeating the snapshot unchanged when nothing is missing.",
+   "The summariser always receives the truncated older history; the original sends the untruncated version when it fits in the model's limit.",
+   "No hooks, telemetry or chat recording, and no experimental context-management path."
+  ]
  }
 }

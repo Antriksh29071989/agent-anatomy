@@ -78,8 +78,8 @@ python3 -m unittest -v
 
 | Technique | Follows | Code | Tests |
 |---|---|---|---|
-| Loop detection | Gemini CLI's call-cycle detector and warn-then-stop response; OpenHands' same-result and error-streak rules | [loop_detector.py](reports/loop-detection/impl/loop_detector.py) | [11](reports/loop-detection/impl/test_loop_detector.py) |
-| Chat compression | Gemini CLI's threshold, tool-output budget, safe split, snapshot, self-critique and size guard | [chat_compressor.py](reports/chat-compression/impl/chat_compressor.py) | [17](reports/chat-compression/impl/test_chat_compressor.py) |
+| Loop detection | Gemini CLI's call-cycle detector and warn-then-stop response; OpenHands' same-result and error-streak rules | [loop_detector.py](reports/loop-detection/impl/loop_detector.py) | [12](reports/loop-detection/impl/test_loop_detector.py) |
+| Chat compression | Gemini CLI's threshold, tool-output budget, safe split, snapshot, self-critique and size guard | [chat_compressor.py](reports/chat-compression/impl/chat_compressor.py) | [19](reports/chat-compression/impl/test_chat_compressor.py) |
 
 Then: where the approaches differ and why, and a "build your own" list. Each report also gets a 1200×630 share card and link-preview tags.
 

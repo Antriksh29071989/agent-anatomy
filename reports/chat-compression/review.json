@@ -1,7 +1,7 @@
 {
  "reviewer": "independent reviewer agent",
- "reviewed_at": "2026-10-03",
- "prose_hash": "d894841ed231d8fc",
+ "reviewed_at": "2026-10-04",
+ "prose_hash": "c93f04e47e3de115",
  "results": [
   {
    "id": "service",
@@ -260,6 +260,126 @@
    "verdict": "supported",
    "note": "",
    "hash": "abbdb68a6f6e1e53"
+  },
+  {
+   "id": "impl:threshold",
+   "verdict": "supported",
+   "note": "",
+   "hash": "96f9886a2019d2a8"
+  },
+  {
+   "id": "impl:tokens",
+   "verdict": "supported",
+   "note": "",
+   "hash": "4bfdfb9d80c0a071"
+  },
+  {
+   "id": "impl:trigger",
+   "verdict": "supported",
+   "note": "",
+   "hash": "762c6a634793b692"
+  },
+  {
+   "id": "impl:truncfirst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0b24bd52479b0d05"
+  },
+  {
+   "id": "impl:walk",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d5fcc416fe357ac7"
+  },
+  {
+   "id": "impl:budget",
+   "verdict": "supported",
+   "note": "",
+   "hash": "97b77da38b458ab3"
+  },
+  {
+   "id": "impl:overbudget",
+   "verdict": "supported",
+   "note": "",
+   "hash": "2c3273cc2e718271"
+  },
+  {
+   "id": "impl:truncfmt",
+   "verdict": "supported",
+   "note": "",
+   "hash": "fa85d12508d96fa1"
+  },
+  {
+   "id": "impl:trunconly",
+   "verdict": "supported",
+   "note": "",
+   "hash": "588d6cad45d92bb6"
+  },
+  {
+   "id": "impl:splitcall",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1f398dd6396e0a7c"
+  },
+  {
+   "id": "impl:splitrule",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f471ad1985cfca87"
+  },
+  {
+   "id": "impl:splitall",
+   "verdict": "supported",
+   "note": "Matches for every non-empty history. Minor boundary difference, unreachable through compress(): `last = history[-1]` (chat_compressor.py:69) raises IndexError on an empty list, where the original uses `lastContent?.role` (chatCompressionService.ts:312-315) and returns 0. compress() returns NOOP on an empty history first (lines 79-80), as the original does (479-488).",
+   "hash": "2891394f07f766d2"
+  },
+  {
+   "id": "impl:snapshot",
+   "verdict": "supported",
+   "note": "",
+   "hash": "86cd3fee27be504e"
+  },
+  {
+   "id": "impl:verify",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e1bd05cc893eb6e8"
+  },
+  {
+   "id": "impl:final",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ebc07400fb4b9c74"
+  },
+  {
+   "id": "impl:empty",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3ade81923dc50150"
+  },
+  {
+   "id": "impl:newhistory",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3303c3b0aaa4dc29"
+  },
+  {
+   "id": "impl:inflated",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f8966bb5813d8644"
+  },
+  {
+   "id": "impl:flag",
+   "verdict": "supported",
+   "note": "",
+   "hash": "9307a451d62a9e3b"
+  },
+  {
+   "id": "impl:reset",
+   "verdict": "supported",
+   "note": "",
+   "hash": "85c5f2b4e7c302ab"
   }
  ],
  "uncited": []

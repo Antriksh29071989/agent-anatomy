@@ -145,7 +145,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
   <section class="cols">
     <article class="col">
       <p class="kicker">Deep dive</p>
-      <p class="byline">Gemini CLI &middot; <b>43 reviewed claims</b></p>
+      <p class="byline">Gemini CLI &middot; <b>43 reviewed claims</b> &middot; working code</p>
       <h3><a href="reports/chat-compression/">How Gemini CLI compresses chat history</a></h3>
       <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
       <p>It then asks the model to critique its own summary. If the new history has more tokens than the old one, it is thrown away, and automatic attempts stop calling the summariser until a new chat starts.</p>
