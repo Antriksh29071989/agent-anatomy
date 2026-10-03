@@ -13,62 +13,172 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
-:root { --bg: #f5f3ee; --surface: #ffffff; --ink: #151a22; --muted: #5a6473; --line: #e0dcd2; --accent: #0a66c2;
-  --hero: #0a1120; --hero-2: #101b33; --hero-ink: #eaf1fb; --hero-muted: #93a5c1; --hero-line: rgba(120,160,220,.16);
+:root {
+  --page: #e7e1d1; --sheet: #f8f4e8; --well: #efe8d4; --ink: #1b1a17; --ink-soft: #45423a; --ink-faint: #7c7563;
+  --rule: #201e19; --rule-soft: rgba(32,30,25,.28); --rule-hair: rgba(32,30,25,.16);
+  --accent: #8a1f11; --accent-soft: rgba(138,31,17,.08); --on-accent: #f8f4e8;
+  --ok: #2f5d3a; --mid: #7a5a12; --none: #6b6657;
+  --display: "Lora", Georgia, "Times New Roman", serif;
+  --body: "PT Serif", Georgia, "Times New Roman", serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; }
+}
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #0c111b; --surface: #131a27; --ink: #e6ecf5; --muted: #98a4b7; --line: #253044; --accent: #6db3ff; --hero: #070c17; --hero-2: #0e172b; }
+  :root {
+    --page: #17150f; --sheet: #221f19; --well: #2a2520; --ink: #d9d0bd; --ink-soft: #b0a790; --ink-faint: #7f7663;
+    --rule: #b0a790; --rule-soft: rgba(217,208,189,.22); --rule-hair: rgba(217,208,189,.12);
+    --accent: #cc9a56; --accent-soft: rgba(204,154,86,.12); --on-accent: #221f19;
+    --ok: #8fbf9a; --mid: #d8b25e; --none: #9a927f;
+  }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
-a { color: var(--accent); text-decoration: none; }
-.wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
-.hero { background:
-    linear-gradient(var(--hero-line) 1px, transparent 1px) 0 0 / 100% 32px,
-    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px) 0 0 / 32px 100%,
-    radial-gradient(1200px 500px at 15% -10%, #17366b 0%, transparent 60%),
-    linear-gradient(180deg, var(--hero) 0%, var(--hero-2) 100%);
-  color: var(--hero-ink); padding: 56px 0 44px; }
-.kicker { font: 600 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: #7fb7ff; margin: 0 0 18px; }
-h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.05; letter-spacing: -.025em; margin: 0 0 14px; }
-.hero p { color: var(--hero-muted); font-size: 18px; max-width: 40em; margin: 0; }
-.hero a { color: #9bcbff; }
-main { padding: 36px 0 56px; }
-.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.card { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; color: inherit; transition: border-color .15s, transform .15s; }
-.card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
-.card p { margin: 0 0 14px; color: var(--muted); }
-.card span { font: 12px var(--mono); color: var(--muted); }
-.card b { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
-footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: 14px; }
-code { font: .9em var(--mono); }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+.sheet { max-width: 1120px; margin: 0 auto; background: var(--sheet); padding: 28px 32px 40px; min-height: 100vh; box-shadow: 0 0 0 1px var(--rule-hair); }
+
+.topline { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
+.topline em { font-style: italic; letter-spacing: .06em; }
+.topline a:hover { color: var(--accent); }
+.masthead { text-align: center; padding: 22px 0 18px; }
+.masthead h1 { font: 700 clamp(44px, 9vw, 84px)/1 var(--display); letter-spacing: -.02em; margin: 0 0 14px; }
+.masthead p { margin: 0; font: italic 400 17px/1.4 var(--display); color: var(--ink-faint); }
+.masthead p b { font-weight: 600; color: var(--ink); border-bottom: 1.5px solid var(--accent); }
+.double { border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule); height: 5px; margin: 0; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--rule-soft); }
+.bar span { font: italic 600 14px var(--display); margin-right: 8px; }
+.pill { display: inline-block; font: 700 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; padding: 7px 11px; border: 1px solid var(--rule-soft); border-radius: 4px; background: var(--well); color: var(--ink-soft); }
+.pill.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+code { font: 13px var(--mono); background: var(--well); border: 1px solid var(--rule-hair); padding: 2px 7px; border-radius: 4px; overflow-wrap: anywhere; }
+
+.kicker { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 26px 0 8px; }
+.kicker::before { content: "\2022\00a0"; }
+.byline { font: 11.5px/1.4 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px; }
+.byline b { color: var(--accent); font-weight: 400; }
+h2 { font: 700 clamp(28px, 4.4vw, 40px)/1.14 var(--display); letter-spacing: -.012em; margin: 0 0 16px; }
+h3 { font: 700 23px/1.2 var(--display); margin: 0 0 12px; }
+h2 a:hover, h3 a:hover { color: var(--accent); }
+p { margin: 0 0 12px; color: var(--ink-soft); }
+.dropcap::first-letter { font: 700 3.5em/.82 var(--display); float: left; color: var(--accent); padding: 5px 8px 0 0; }
+.more { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.more:hover { text-decoration: underline; }
+
+.lead { display: grid; grid-template-columns: 5fr 6fr; gap: 30px; padding-bottom: 26px; border-bottom: 1px solid var(--rule-soft); }
+.figure { background: var(--well); border-radius: 4px; padding: 22px 22px 18px; align-self: start; }
+.figure h4 { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px; }
+.figure table { width: 100%; border-collapse: collapse; }
+.figure td { padding: 11px 0; border-top: 1px solid var(--rule-soft); vertical-align: top; font-size: 15px; color: var(--ink-soft); }
+.figure tr:first-child td { border-top: 2px solid var(--rule); }
+.figure td:first-child { font: 700 16px var(--display); color: var(--ink); white-space: nowrap; padding-right: 16px; }
+.verdict { display: block; font: 700 10.5px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; margin-top: 6px; }
+.verdict.ok { color: var(--ok); } .verdict.mid { color: var(--mid); } .verdict.none { color: var(--none); }
+.figure figcaption, .cap { font: italic 13.5px/1.45 var(--display); color: var(--ink-faint); margin-top: 12px; }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.col { padding: 4px 26px 26px; border-left: 1px solid var(--rule-soft); }
+.col:first-child { padding-left: 0; border-left: 0; }
+.col:last-child { padding-right: 0; }
+.col .kicker { margin-top: 22px; }
+.steps { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; padding: 10px 0 10px 34px; border-top: 1px solid var(--rule-soft); position: relative; font-size: 15px; color: var(--ink-soft); }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 8px; font: 700 20px var(--display); color: var(--accent); }
+.topics { margin: 12px 0 0; padding: 0; list-style: none; columns: 2; column-gap: 18px; font-size: 14.5px; color: var(--ink-soft); }
+.topics li { padding: 6px 0; border-top: 1px solid var(--rule-hair); break-inside: avoid; }
+.cmd { display: block; margin: 10px 0 14px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; }
+
+footer { border-top: 2px solid var(--rule); margin-top: 6px; padding-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font: italic 13.5px/1.5 var(--display); color: var(--ink-faint); }
+footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
+@media (max-width: 860px) {
+  .sheet { padding: 20px 18px 32px; }
+  .lead { grid-template-columns: 1fr; gap: 20px; }
+  .cols { grid-template-columns: 1fr; }
+  .col { padding: 4px 0 20px; border-left: 0; border-top: 1px solid var(--rule-soft); }
+  .col:first-child { border-top: 0; }
+  .topline em { display: none; }
+}
 </style>
 </head>
 <body>
-<div class="hero"><div class="wrap">
-  <p class="kicker">Agent Anatomy</p>
-  <h1>How production AI agents are really built</h1>
-  <p>One technique at a time, compared across real agent codebases, with the actual code. Every excerpt is copied by script from a pinned commit. Generated with the <a href="https://github.com/Antriksh29071989/agent-anatomy">agent-anatomy plugin</a> for Claude Code.</p>
-</div></div>
-<main><div class="wrap"><div class="grid">
-  <a class="card" href="reports/loop-detection/">
-    <h2>Loop detection</h2>
-    <p>How do agents notice they are stuck, and what do they do about it? Gemini CLI asks a second model, OpenHands matches patterns, LangGraph counts steps.</p>
-    <span>gemini-cli &middot; OpenHands &middot; LangGraph &middot; Codex &middot; analysed 2026-10-03</span><br>
-    <b>Read the report &rarr;</b>
-  </a>
-  <a class="card" href="reports/chat-compression/">
-    <h2>Chat compression</h2>
-    <p>How does Gemini CLI shrink the conversation when the context fills up? At 50% of the window it keeps the newest 30% and turns the rest into a snapshot the model then critiques.</p>
-    <span>gemini-cli &middot; analysed 2026-10-03</span><br>
-    <b>Read the report &rarr;</b>
-  </a>
-</div></div></main>
-<footer><div class="wrap">
-  Ask your own: <code>/agent-anatomy:ask &lt;question&gt;</code>. Explanations are an independent reading of public code at one commit.
-</div></footer>
+<div class="sheet">
+  <div class="topline">
+    <a href="https://github.com/Antriksh29071989/agent-anatomy">&larr; Source on GitHub</a>
+    <em>Saturday, October 3, 2026</em>
+    <span>2 reports</span>
+  </div>
+  <header class="masthead">
+    <h1>Agent Anatomy</h1>
+    <p>How production AI agents are really built &middot; <b>read from their source code</b></p>
+  </header>
+  <div class="double"></div>
+  <div class="bar">
+    <div><span>Reading:</span> <i class="pill">Gemini CLI</i> <i class="pill">OpenHands</i> <i class="pill">LangGraph</i> <i class="pill">Codex</i></div>
+    <div><span>Ask your own:</span> <code>/agent-anatomy:ask &lt;question&gt;</code></div>
+  </div>
+
+  <p class="kicker">Top story</p>
+  <p class="byline">Four codebases compared &middot; <b>16 verified excerpts</b> &middot; analysed October 3, 2026</p>
+  <h2><a href="reports/loop-detection/">How agents notice they are stuck in a loop, and what they do about it</a></h2>
+  <section class="lead">
+    <figure class="figure" style="margin:0">
+      <h4>Who detects what</h4>
+      <table>
+        <tr><td>Gemini CLI<span class="verdict ok">Built in</span></td><td>Three detectors: repeated tool-call cycles, repeated text, and a model acting as judge that a second model must confirm.</td></tr>
+        <tr><td>OpenHands<span class="verdict ok">Built in</span></td><td>Five patterns over recent events, such as four identical action-and-result pairs.</td></tr>
+        <tr><td>LangGraph<span class="verdict mid">Left to you</span></td><td>A step budget only. The default is 10,007 steps.</td></tr>
+        <tr><td>Codex<span class="verdict none">Not found</span></td><td>No detector or step cap found in the core turn loop.</td></tr>
+      </table>
+      <figcaption>Each repository read at one pinned commit. &ldquo;Not found&rdquo; means not found in what was searched.</figcaption>
+    </figure>
+    <div>
+      <p class="dropcap">There is no single technique. Gemini CLI hashes every tool call's name and arguments and looks for a cycle of up to five calls repeated five times. That catches the obvious loops. For the subtle ones, where an agent keeps doing slightly different unproductive things, it waits thirty turns and then asks a model whether the conversation is going anywhere.</p>
+      <p>OpenHands takes the rule-based route. It compares both the action and what came back, so a command that is polled and returns something new each time is not mistaken for a loop.</p>
+      <p>The two agree on one thing: warn the model before stopping it. Gemini CLI injects a message on the first detection and ends the turn on the second. OpenHands names the failing tool and its error in a nudge, and only then marks the run as stuck.</p>
+      <p>LangGraph, a framework, does not look at behaviour at all. It counts steps and leaves the rest to the graph you write.</p>
+      <a class="more" href="reports/loop-detection/">Read the full report &rarr;</a>
+    </div>
+  </section>
+
+  <section class="cols">
+    <article class="col">
+      <p class="kicker">Deep dive</p>
+      <p class="byline">Gemini CLI &middot; <b>5 verified excerpts</b></p>
+      <h3><a href="reports/chat-compression/">How Gemini CLI compresses chat history</a></h3>
+      <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
+      <p>It then asks the model to critique its own summary. If the result is not smaller than what it replaced, it is thrown away and later attempts only trim old tool output.</p>
+      <a class="more" href="reports/chat-compression/">Read the report &rarr;</a>
+    </article>
+    <article class="col">
+      <p class="kicker">How it works</p>
+      <p class="byline">The method</p>
+      <h3>The code on the page cannot be misquoted</h3>
+      <p>The model never writes code into a report. It gives a file, a line range and a string it expects to find there.</p>
+      <ol class="steps">
+        <li>Each repository is fetched and pinned to one commit.</li>
+        <li>The implementation is found by search, then read and traced.</li>
+        <li>A script copies the quoted lines from that commit, and fails the build if anything does not match.</li>
+      </ol>
+      <p class="cap">The explanations are still an AI's reading of the code. Check them before relying on them.</p>
+    </article>
+    <article class="col">
+      <p class="kicker">Ask your own</p>
+      <p class="byline">A Claude Code plugin</p>
+      <h3>One question, one or several codebases</h3>
+      <code class="cmd">/plugin marketplace add Antriksh29071989/agent-anatomy<br>/plugin install agent-anatomy@agent-anatomy</code>
+      <p>Then ask, naming repositories or letting it choose:</p>
+      <ul class="topics">
+        <li>Context compression</li><li>Loop detection</li><li>Memory</li><li>Tool errors</li><li>Sub-agents</li><li>Approvals</li><li>Prompt assembly</li><li>Evals</li><li>Prompt caching</li><li>Checkpointing</li>
+      </ul>
+    </article>
+  </section>
+
+  <footer>
+    <span>An independent reading of public code. Excerpts belong to their authors under each project's licence.</span>
+    <span><a href="https://github.com/Antriksh29071989/agent-anatomy">agent-anatomy on GitHub</a></span>
+  </footer>
+</div>
 </body>
 </html>
