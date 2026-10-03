@@ -8,6 +8,8 @@ A [Claude Code](https://claude.com/claude-code) plugin. Ask one pinpoint questio
 
 **[Live example: how do agents detect they are stuck in a loop? →](https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/)**
 
+More reports: [how Gemini CLI compresses chat history](https://antriksh29071989.github.io/agent-anatomy/reports/chat-compression/) · [all reports](https://antriksh29071989.github.io/agent-anatomy/)
+
 ## Why
 
 Tutorials say "compress the context by summarising old messages" or "detect loops by counting repeated tool calls". That is the textbook answer. The production answer is in the details: what triggers it, what the thresholds are, what happens when it fails, and whether the model gets a warning first. Those details are sitting in open-source code that few people read.

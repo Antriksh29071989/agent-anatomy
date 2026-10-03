@@ -1,0 +1,174 @@
+{
+ "meta": {
+  "question": "How does Gemini CLI compress chat history when the context fills up?",
+  "title": "Chat compression",
+  "slug": "chat-compression",
+  "analysed_at": "2026-10-03",
+  "hook": "At 50% of the window it keeps the newest 30% and turns the rest into a snapshot the model then critiques.",
+  "site_url": "https://antriksh29071989.github.io/agent-anatomy/reports/chat-compression/"
+ },
+ "answer": "When the prompt reaches 50% of the model's token limit, Gemini CLI keeps roughly the newest 30% of the conversation and replaces the older part with a structured `<state_snapshot>` written by a model. It makes two model calls: one to write the snapshot and one asking the model to critique and improve it. If the result is not smaller than before, it is thrown away and later automatic attempts fall back to truncating old tool outputs only.",
+ "repos": [
+  {
+   "id": "gemini-cli",
+   "repo": "google-gemini/gemini-cli",
+   "commit": "fb972b2f87fe7d5b06d37eac711490162d98de2c",
+   "commit_date": "2026-10-02",
+   "kind": "product",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "what": "Google's terminal coding agent",
+   "verdict": "implements",
+   "summary": "A `ChatCompressionService` that runs before every turn: a threshold check, a budget pass over old tool outputs, a split at a safe message boundary, a model-written state snapshot with a self-critique pass, and a guard that rejects a result that came out larger."
+  }
+ ],
+ "comparison": {
+  "dimensions": [
+   "Trigger",
+   "What is kept",
+   "What is summarised",
+   "How",
+   "If it fails"
+  ],
+  "rows": [
+   {
+    "repo": "gemini-cli",
+    "cells": [
+     "Prompt tokens reach 50% of the model's limit (`DEFAULT_COMPRESSION_TOKEN_THRESHOLD`, configurable), or the user runs the compress command",
+     "About the newest 30% of the history, cut at a user message that is not a tool response. Old tool outputs beyond a 50,000-token budget are cut to their last 30 lines",
+     "Everything before the split point, about 70%",
+     "Two model calls: write a `<state_snapshot>` in XML, then critique and rewrite it. The snapshot is inserted as a user message followed by a fixed model acknowledgement",
+     "Empty summary: nothing changes. Result larger than before: discarded, and later automatic attempts only truncate tool outputs without calling the summariser"
+    ]
+   }
+  ]
+ },
+ "deep_dives": [
+  {
+   "repo": "gemini-cli",
+   "headline": "Truncate, split, snapshot, verify, and reject if it grew",
+   "how_it_works": [
+    "`GeminiClient` calls `tryCompressChat` at the start of every turn, before the model is called. The service first decides whether to act at all: it takes the token count of the last prompt and compares it with the threshold times the model's token limit. The default threshold is 0.5, so compression starts at half the context window, not at the edge. A user-run compress command sets `force` and skips this check.",
+    "Before summarising anything, it makes a cheap pass called `truncateHistoryToBudget`. Walking from newest to oldest, it lets tool responses use up to 50,000 tokens in full. Older large tool responses past that budget are cut to their last 30 lines and the full output is saved to a file.",
+    "Then it picks the split point. `findCompressSplitPoint` measures each message by its JSON length and looks for the first position, after 70% of the characters, that is a user message which is not a tool response. Splitting only there means a tool call is never separated from its result. If no such point exists, it compresses everything, but only when the last message is a model message with no pending tool call.",
+    "The older part is sent to a model with a dedicated system prompt that asks for a `<state_snapshot>` with fixed sections: overall goal, active constraints, key knowledge, artifact trail, file system state, recent actions and task state. If an earlier snapshot is already in the history, the instruction is to merge it into the new one. A second call then hands the model its own snapshot and asks it to critically evaluate what it left out and produce an improved version.",
+    "The new history is the snapshot as a user message, a fixed model reply, and the kept recent turns. The service counts the tokens of that new history. If the count is higher than before, the result is discarded and the client sets a flag: from then on, automatic attempts skip the summariser and rely on tool-output truncation alone. On success, the client starts a fresh chat session with the new history and emits a `ChatCompressed` event."
+   ],
+   "diagram": {
+    "caption": "Two exits return the history unchanged; one failure switches later attempts to truncation only.",
+    "mermaid": "flowchart TB\n  turn[\"Start of a turn<br/>tryCompressChat\"]:::external --> chk{\"Tokens at or above<br/>50 percent of limit?\"}:::component\n  chk -->|\"no\"| noop[\"No change\"]:::store\n  chk -->|\"yes, or forced\"| trunc[\"truncateHistoryToBudget<br/>trim old tool outputs\"]:::component\n  trunc --> failed{\"Summariser failed<br/>earlier?\"}:::component\n  failed -->|\"yes\"| tonly[\"Keep truncation only<br/>CONTENT_TRUNCATED\"]:::store\n  failed -->|\"no\"| split[\"findCompressSplitPoint<br/>keep newest 30 percent\"]:::component\n  split --> snap[\"Model writes<br/>state_snapshot\"]:::system\n  snap --> verify[\"Model critiques<br/>and rewrites it\"]:::system\n  verify --> count{\"New history<br/>smaller?\"}:::component\n  count -->|\"yes\"| done[\"New chat session<br/>COMPRESSED\"]:::store\n  count -->|\"no\"| flag[\"Discard result<br/>set failure flag\"]:::queue\n"
+   },
+   "key_parts": [
+    {
+     "name": "ChatCompressionService.compress",
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "role": "The whole procedure: threshold check, truncation, split, two model calls, size guard"
+    },
+    {
+     "name": "DEFAULT_COMPRESSION_TOKEN_THRESHOLD",
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "role": "0.5: the fraction of the model's token limit at which compression starts"
+    },
+    {
+     "name": "COMPRESSION_PRESERVE_THRESHOLD",
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "role": "0.3: the fraction of recent history kept verbatim"
+    },
+    {
+     "name": "COMPRESSION_FUNCTION_RESPONSE_TOKEN_BUDGET",
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "role": "50,000 tokens of tool responses kept in full before older ones are truncated"
+    },
+    {
+     "name": "findCompressSplitPoint",
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "role": "Chooses a cut that never separates a tool call from its response"
+    },
+    {
+     "name": "getCompressionPrompt",
+     "path": "packages/core/src/prompts/snippets.ts",
+     "role": "The summariser's system prompt and the snapshot's XML structure"
+    },
+    {
+     "name": "GeminiClient.tryCompressChat",
+     "path": "packages/core/src/core/client.ts",
+     "role": "Calls the service each turn, applies the result and remembers a failed attempt"
+    },
+    {
+     "name": "compressCommand",
+     "path": "packages/cli/src/ui/commands/compressCommand.ts",
+     "role": "The manual command, which calls `tryCompressChat` with `force` set"
+    }
+   ],
+   "excerpts": [
+    {
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "start": 495,
+     "end": 519,
+     "expect": "isOverModelThreshold",
+     "title": "The trigger",
+     "note": "It uses the real token count of the last prompt when there is one and an estimate otherwise. `force` skips the check."
+    },
+    {
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "start": 282,
+     "end": 322,
+     "expect": "findCompressSplitPoint",
+     "title": "Choosing where to cut",
+     "note": "Called with a fraction of 0.7. Only a user message that is not a tool response can be a split point."
+    },
+    {
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "start": 587,
+     "end": 613,
+     "expect": "state_snapshot",
+     "title": "First call: write the snapshot",
+     "note": "If a snapshot from an earlier compression is present, the model is told to fold it into the new one."
+    },
+    {
+     "path": "packages/core/src/context/chatCompressionService.ts",
+     "start": 616,
+     "end": 645,
+     "expect": "Critically evaluate",
+     "title": "Second call: the snapshot checks itself",
+     "note": "If the second call returns nothing, the first summary is used."
+    },
+    {
+     "path": "packages/core/src/prompts/snippets.ts",
+     "start": 926,
+     "end": 968,
+     "expect": "<overall_goal>",
+     "title": "What the snapshot must contain",
+     "note": "The structure continues with a task state section listing done, in-progress and to-do steps."
+    }
+   ],
+   "gotchas": [
+    "Compression starts at half the window by default. That leaves room for the two summariser calls, which themselves send the older history to a model.",
+    "Every successful compression costs two extra model calls over a large input.",
+    "A summary that comes out larger than the original disables summarisation for later automatic attempts; a manual compress command still tries.",
+    "In `compress`, the `PreCompress` hook is fired before the threshold check, so it also runs on attempts that end as a no-op.",
+    "The split is measured in characters of JSON, not tokens, so the 30% kept is approximate.",
+    "The summariser prompt opens with a rule to ignore instructions found inside the history, because tool outputs being summarised can contain injected text.",
+    "This is the default path. An experimental context-management pipeline (`contextManagement`, off by default in the settings schema) replaces it when enabled; in that case `tryCompressChat` is not called from the turn."
+   ]
+  }
+ ],
+ "build_your_own": [
+  "Trigger well before the limit. Summarising needs headroom, because the summariser has to read what you are about to drop.",
+  "Trim old tool outputs first. It is cheap, needs no model call, and large logs and search results are usually where the tokens are.",
+  "Cut only at a boundary that keeps each tool call with its result. A split in the middle leaves the model with a call it cannot match to an output.",
+  "Give the summary a fixed structure. Named sections for goal, constraints, files changed and next step are harder to leave out than a free-form paragraph.",
+  "When compressing again, merge the previous summary into the new one, or early context decays with each round.",
+  "Check that the result is actually smaller, and stop retrying when it is not.",
+  "Treat the history as untrusted input to the summariser: tell it to ignore instructions it finds there."
+ ],
+ "method": {
+  "scope": "Read in full: `ChatCompressionService.compress`, `findCompressSplitPoint`, the constants, the compression prompt, and the call site and result handling in `GeminiClient`. The settings schema was checked for the default threshold and for whether the experimental pipeline is on by default.",
+  "limits": [
+   "`truncateHistoryToBudget` was read through its description and key lines, not line by line.",
+   "Not examined: the per-turn tool-output masking step (`toolOutputMaskingService.ts`), the experimental context-management pipeline and its processors, and how sub-agents compress their own history.",
+   "The threshold can also be set by configuration and by a remote experiment flag, so a given installation may not use 0.5.",
+   "Behaviour was read from source, not observed by running the agent."
+  ]
+ }
+}
