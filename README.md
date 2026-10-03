@@ -34,6 +34,12 @@ Name the repositories if you want specific ones:
 /agent-anatomy:ask how are tool errors fed back to the model? in langchain-ai/langgraph openai/openai-agents-python
 ```
 
+One repository is fine too: you get the same deep dive without the comparison.
+
+```
+/agent-anatomy:ask how is chat history compressed? in gemini-cli
+```
+
 Run it with no question to get a menu of topics.
 
 ## What you get

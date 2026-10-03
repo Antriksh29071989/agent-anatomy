@@ -193,13 +193,14 @@ footer .gen { font: 12px var(--mono); }
     h("p", { class: "meta" }, raw("analysed " + (meta.analysed_at || "") + " · each repository pinned to one commit, listed at the end"))
   )));
 
-  var links = [["compare", "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), [["differences", "Differences"], ["build", "Build your own"]]);
+  var single = repos.length === 1, hasDiffs = (data.differences || []).length > 0;
+  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"]]);
   app.appendChild(h("nav", null, h("div", { class: "wrap" }, links.map(function (l) { return h("a", { href: "#" + l[0] }, raw(l[1])); }))));
   var n = 0; function next() { n += 1; return (n < 10 ? "0" : "") + n; }
 
   // ---- Comparison ----
   var comp = data.comparison || {};
-  var sec = section("compare", next(), "Side by side", "The same question asked of each codebase.");
+  var sec = section("compare", next(), single ? "At a glance" : "Side by side", single ? "The short version, before the detail." : "The same question asked of each codebase.");
   sec.appendChild(h("div", { class: "card tablewrap" }, h("table", null,
     h("thead", null, h("tr", null, h("th", null, ""), (comp.dimensions || []).map(function (d) { return h("th", null, raw(d)); }))),
     h("tbody", null, (comp.rows || []).map(function (row) {
@@ -258,12 +259,14 @@ footer .gen { font: 12px var(--mono); }
     sec.appendChild(body);
   });
 
-  sec = section("differences", next(), "Where they differ, and why", null);
-  sec.appendChild(h("div", { class: "grid" }, (data.differences || []).map(function (x) {
-    return h("div", { class: "card" }, h("h3", null, x.title), h("p", null, x.detail));
-  })));
+  if (hasDiffs) {
+    sec = section("differences", next(), "Where they differ, and why", null);
+    sec.appendChild(h("div", { class: "grid" }, data.differences.map(function (x) {
+      return h("div", { class: "card" }, h("h3", null, x.title), h("p", null, x.detail));
+    })));
+  }
 
-  sec = section("build", next(), "If you are building your own", "What these implementations suggest, in order of how early you need it.");
+  sec = section("build", next(), "If you are building your own", single ? "What this implementation suggests, in order of how early you need it." : "What these implementations suggest, in order of how early you need it.");
   sec.appendChild(h("div", { class: "card" }, h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); }))));
 
   var method = data.method || {};

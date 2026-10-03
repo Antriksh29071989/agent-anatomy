@@ -186,10 +186,14 @@ def check(report):
     if missing:
         errors.append(f"deep_dives: missing a section for {sorted(missing)}")
 
-    for key, lo, hi in (("differences", 2, 6), ("build_your_own", 3, 7)):
-        items = need(report, key, list, "report") or []
-        if not lo <= len(items) <= hi:
-            errors.append(f"{key}: {lo} to {hi} items")
+    items = need(report, "build_your_own", list, "report") or []
+    if not 3 <= len(items) <= 7:
+        errors.append("build_your_own: 3 to 7 items")
+    diffs = report.get("differences") or []
+    if len(repos) > 1 and not 2 <= len(diffs) <= 6:
+        errors.append("differences: 2 to 6 items when more than one repository is compared")
+    if len(repos) == 1 and diffs:
+        errors.append("differences: leave out for a single-repository report")
     return errors, warnings
 
 

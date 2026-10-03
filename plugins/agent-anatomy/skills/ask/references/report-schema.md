@@ -101,7 +101,7 @@ For a local repository that is not on GitHub, give `"local_path": "/abs/path"` i
 | `excerpts[].start`, `end` | Line numbers, at most 45 lines, within the file |
 | `excerpts[].expect` | Required; must appear in the range |
 | `excerpts[].code` | Not allowed |
-| `differences` | 2 to 6 |
+| `differences` | 2 to 6 when comparing; omit for a single repository |
 | `build_your_own` | 3 to 7 |
 
 ## Diagrams

@@ -20,7 +20,7 @@ Sharpen a vague question into one that code can answer. "How does memory work?" 
 
 ## Phase 1 - Choose the repositories
 
-- **The user named repositories:** use exactly those (registry ids, `owner/name`, URLs or local paths).
+- **The user named repositories:** use exactly those (registry ids, `owner/name`, URLs or local paths). One repository is fine: the report then explains that single implementation in depth, with a one-row summary table and no differences section.
 - **None named:** pick 3 or 4 from `references/repos.json` that are most likely to implement the technique. Include at least one product and, where it is informative, one framework, because they answer differently: products own the whole loop, frameworks hand parts of it to you. Say which you picked and why in one line.
 
 Then fetch them:
@@ -61,7 +61,7 @@ In the report give only `path`, `start`, `end`, a `title`, an optional `note`, a
 ## Phase 4 - Compare
 
 - Choose 4-6 comparison dimensions that fit the question (for example approach, what triggers it, thresholds, what it does, fallback). Fill one row per repository with concrete facts, not adjectives.
-- Write 2-6 differences that matter, each with the reason behind it where the code shows one. Product versus framework is often the reason.
+- With more than one repository, write 2-6 differences that matter, each with the reason behind it where the code shows one. Product versus framework is often the reason.
 - Write 3-7 "build your own" points: what these implementations suggest for someone writing their own agent, ordered by how early they need it.
 - Draw one flow diagram per repository where the mechanism has steps (rules in `references/report-schema.md`).
 
