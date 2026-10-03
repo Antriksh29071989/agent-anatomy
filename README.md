@@ -48,11 +48,11 @@ Run it with no question to get a menu of topics.
 
 `reports/<topic>/index.html`, one self-contained page.
 
-### A direct answer and a side-by-side table
+### A direct answer and a side-by-side summary
 
-Each repository gets a verdict (built in, partly, left to the developer, or not found) and one row of concrete facts.
+Each repository gets a verdict (built in, partly, left to the developer, or not found) and the same set of concrete facts.
 
-![The answer and the comparison table](docs/images/overview.png)
+![The answer and the comparison](docs/images/overview.png)
 
 ### A deep dive per repository
 
