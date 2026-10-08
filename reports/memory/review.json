@@ -1,0 +1,398 @@
+{
+ "reviewer": "claim-reviewer agent",
+ "reviewed_at": "2026-10-04",
+ "prose_hash": "73d5d3f312ab39f0",
+ "results": [
+  {
+   "id": "tiers",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ff314a94f1a9794a"
+  },
+  {
+   "id": "created",
+   "verdict": "supported",
+   "note": "",
+   "hash": "a554f298b38488c5"
+  },
+  {
+   "id": "refresh",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0d85da31ebd5e75a"
+  },
+  {
+   "id": "discover",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e7419332f3ce8118"
+  },
+  {
+   "id": "filenames",
+   "verdict": "supported",
+   "note": "",
+   "hash": "351bb64a592d42f7"
+  },
+  {
+   "id": "globalpath",
+   "verdict": "supported",
+   "note": "",
+   "hash": "396b5957dd158818"
+  },
+  {
+   "id": "userproject",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c329775e868ece77"
+  },
+  {
+   "id": "legacy",
+   "verdict": "supported",
+   "note": "",
+   "hash": "fdbfb31eec09b8a4"
+  },
+  {
+   "id": "memdir",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e64c15c15e93db46"
+  },
+  {
+   "id": "envpaths",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3321b6a74e98e920"
+  },
+  {
+   "id": "upward",
+   "verdict": "supported",
+   "note": "",
+   "hash": "de4362bcf1cbcbb8"
+  },
+  {
+   "id": "extension",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d94c3b032a270ec8"
+  },
+  {
+   "id": "untrusted",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6a9af8ad35165f64"
+  },
+  {
+   "id": "sysmem",
+   "verdict": "supported",
+   "note": "",
+   "hash": "bb5609119bf82823"
+  },
+  {
+   "id": "sysprompt",
+   "verdict": "supported",
+   "note": "",
+   "hash": "90e0aa71f2edf1a0"
+  },
+  {
+   "id": "render",
+   "verdict": "supported",
+   "note": "",
+   "hash": "acbdd8b268b2132c"
+  },
+  {
+   "id": "sessionmem",
+   "verdict": "supported",
+   "note": "",
+   "hash": "b25e06554a02ba7f"
+  },
+  {
+   "id": "jit",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ea99a2af099ea90b"
+  },
+  {
+   "id": "jitgate",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3595111fd955360a"
+  },
+  {
+   "id": "jitstart",
+   "verdict": "supported",
+   "note": "",
+   "hash": "27375b667fcd4d3e"
+  },
+  {
+   "id": "jitskip",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e7c835527f21e037"
+  },
+  {
+   "id": "jitmark",
+   "verdict": "supported",
+   "note": "",
+   "hash": "7dadf7c932d9876c"
+  },
+  {
+   "id": "jitappend",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3386215b7c660791"
+  },
+  {
+   "id": "jitread",
+   "verdict": "supported",
+   "note": "",
+   "hash": "e35fa756824793a0"
+  },
+  {
+   "id": "jitls",
+   "verdict": "supported",
+   "note": "",
+   "hash": "536ee9230fe19c23"
+  },
+  {
+   "id": "notool",
+   "verdict": "supported",
+   "note": "Re-confirmed: no `save_memory` tool or memory tool class in packages/; the string appears only at snippets.ts:872 and snippets.legacy.ts:711.",
+   "hash": "f5a2c1ef4c697a2f"
+  },
+  {
+   "id": "projecttier",
+   "verdict": "supported",
+   "note": "",
+   "hash": "7e5d21201c664fc5"
+  },
+  {
+   "id": "privatetier",
+   "verdict": "supported",
+   "note": "",
+   "hash": "45738e4f528770be"
+  },
+  {
+   "id": "globaltier",
+   "verdict": "supported",
+   "note": "",
+   "hash": "006e8a1b7dcbe197"
+  },
+  {
+   "id": "routing",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c5f9b4560acd2c6b"
+  },
+  {
+   "id": "reload",
+   "verdict": "supported",
+   "note": "",
+   "hash": "2b576e38440dfe5f"
+  },
+  {
+   "id": "autooff",
+   "verdict": "supported",
+   "note": "",
+   "hash": "168741123c02ac9a"
+  },
+  {
+   "id": "autostart",
+   "verdict": "supported",
+   "note": "",
+   "hash": "53d1e41bd9b50698"
+  },
+  {
+   "id": "autodirs",
+   "verdict": "supported",
+   "note": "",
+   "hash": "5ed2676faf040716"
+  },
+  {
+   "id": "lock",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1f49247ca6c516e6"
+  },
+  {
+   "id": "throttle",
+   "verdict": "supported",
+   "note": "",
+   "hash": "1ed42bcf0675d1bb"
+  },
+  {
+   "id": "autoconst",
+   "verdict": "supported",
+   "note": "",
+   "hash": "8c84001f2bf3a04f"
+  },
+  {
+   "id": "eligible",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3d7639fe533ee34d"
+  },
+  {
+   "id": "extractagent",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f6525a616436c9b6"
+  },
+  {
+   "id": "extractrun",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c0d12b09c600492f"
+  },
+  {
+   "id": "record",
+   "verdict": "supported",
+   "note": "",
+   "hash": "883669fad21c6d71"
+  },
+  {
+   "id": "recorddir",
+   "verdict": "supported",
+   "note": "",
+   "hash": "57ff01560ad5b666"
+  },
+  {
+   "id": "history",
+   "verdict": "supported",
+   "note": "",
+   "hash": "d02597f640cc6163"
+  },
+  {
+   "id": "embed",
+   "verdict": "supported",
+   "note": "Re-confirmed: no caller of `generateEmbedding` outside baseLlmClient.ts:191 in non-test code.",
+   "hash": "d7510af21c7bd003"
+  },
+  {
+   "id": "readwhole",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6f49e3f7b09815b6"
+  },
+  {
+   "id": "concat",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3e2f4af795a72b7f"
+  },
+  {
+   "id": "skillscreated",
+   "verdict": "supported",
+   "note": "`skillsBefore` is the snapshot of skills-directory entries taken before the run (memoryService.ts:1208-1225).",
+   "hash": "9096fd6e33935971"
+  },
+  {
+   "id": "wrap",
+   "verdict": "supported",
+   "note": "",
+   "hash": "55456f4de6cffd2c"
+  },
+  {
+   "id": "impl:filenames",
+   "verdict": "supported",
+   "note": "",
+   "hash": "363c1bfa2422530b"
+  },
+  {
+   "id": "impl:upward",
+   "verdict": "supported",
+   "note": "",
+   "hash": "c46d8f966267a3df"
+  },
+  {
+   "id": "impl:refresh",
+   "verdict": "supported",
+   "note": "",
+   "hash": "91172624897da9dd"
+  },
+  {
+   "id": "impl:globalpath",
+   "verdict": "supported",
+   "note": "",
+   "hash": "81bbcf2c9d28b7e9"
+  },
+  {
+   "id": "impl:userproject",
+   "verdict": "supported",
+   "note": "",
+   "hash": "9007116ef77d62bb"
+  },
+  {
+   "id": "impl:legacy",
+   "verdict": "supported",
+   "note": "",
+   "hash": "3724dc4c8f2dd372"
+  },
+  {
+   "id": "impl:trusted",
+   "verdict": "supported",
+   "note": "",
+   "hash": "ed1a0812083358bb"
+  },
+  {
+   "id": "impl:envpaths",
+   "verdict": "supported",
+   "note": "Ceiling logic matches memoryDiscovery.ts:412-413 and the sort at line 88 now matches `unique.sort()` at memoryDiscovery.ts:430.",
+   "hash": "a2b976ddaf944b10"
+  },
+  {
+   "id": "impl:sysmem",
+   "verdict": "supported",
+   "note": "Empty-file behaviour now matches (read_all drops empty files; verified by running, including an empty MEMORY.md next to a legacy file).",
+   "hash": "d026adb72bbf61f0"
+  },
+  {
+   "id": "impl:render",
+   "verdict": "supported",
+   "note": "Both tags match snippets.ts:553-561; the wrapper, marker-line and global-only differences are now declared in simplification 4.",
+   "hash": "349a3e94ecfd7322"
+  },
+  {
+   "id": "impl:sessionmem",
+   "verdict": "supported",
+   "note": "Matches config.ts:2625-2634; a blank project file now yields '' (verified by running).",
+   "hash": "ddd7af705ab201e5"
+  },
+  {
+   "id": "impl:jitgate",
+   "verdict": "supported",
+   "note": "",
+   "hash": "352fb04c6960d070"
+  },
+  {
+   "id": "impl:jitstart",
+   "verdict": "supported",
+   "note": "",
+   "hash": "89b1d8a22c51b21b"
+  },
+  {
+   "id": "impl:jitskip",
+   "verdict": "supported",
+   "note": "",
+   "hash": "0737623a72c052e7"
+  },
+  {
+   "id": "impl:jitmark",
+   "verdict": "supported",
+   "note": "",
+   "hash": "04320e759a6a17d6"
+  },
+  {
+   "id": "impl:jitappend",
+   "verdict": "supported",
+   "note": "",
+   "hash": "f3e536b1d0918f60"
+  },
+  {
+   "id": "impl:concat",
+   "verdict": "supported",
+   "note": "",
+   "hash": "6d06db7d3903d6f8"
+  }
+ ],
+ "uncited": []
+}

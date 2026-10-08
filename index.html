@@ -107,7 +107,7 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
   <div class="topline">
     <a href="https://github.com/Antriksh29071989/agent-anatomy">&larr; Source on GitHub</a>
     <em>Saturday, October 3, 2026</em>
-    <span>2 reports</span>
+    <span>3 reports</span>
   </div>
   <header class="masthead">
     <h1>Agent Anatomy</h1>
@@ -150,6 +150,12 @@ footer a { color: var(--ink-soft); border-bottom: 1px solid var(--accent); }
       <p class="dropcap">When the prompt reaches half of the model's token limit, the newest 30% of the conversation is kept and the rest becomes a structured snapshot written by a model.</p>
       <p>It then asks the model to critique its own summary. If the new history has more tokens than the old one, it is thrown away, and automatic attempts stop calling the summariser until a new chat starts.</p>
       <a class="more" href="reports/chat-compression/">Read the report &rarr;</a> &nbsp; <a class="more" href="reports/chat-compression/#implementation">Working code &rarr;</a>
+      <p class="kicker">Deep dive</p>
+      <p class="byline">Gemini CLI &middot; <b>48 reviewed claims</b> &middot; working code</p>
+      <h3><a href="reports/memory/">How Gemini CLI remembers, without a vector database</a></h3>
+      <p>Memory is markdown files, each read in full. Three tiers decide where a file enters the prompt: the system instruction, the first user message, or a tool's result when that folder is first touched.</p>
+      <p>The model saves a memory by editing a file with its ordinary tools. No semantic database was found.</p>
+      <a class="more" href="reports/memory/">Read the report &rarr;</a> &nbsp; <a class="more" href="reports/memory/#implementation">Working code &rarr;</a>
     </article>
     <article class="col">
       <p class="kicker">How it works</p>

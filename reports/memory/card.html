@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Memory - share card</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased; color: #eaf1fb;
+  background:
+    linear-gradient(rgba(120,160,220,.13) 1px, transparent 1px) 0 0 / 100% 42px,
+    linear-gradient(90deg, rgba(120,160,220,.13) 1px, transparent 1px) 0 0 / 42px 100%,
+    radial-gradient(900px 520px at 12% -8%, #1b4285 0%, transparent 62%),
+    radial-gradient(700px 420px at 100% 110%, #123a6e 0%, transparent 60%),
+    linear-gradient(180deg, #070c17 0%, #0f1a31 100%);
+  padding: 58px 64px 50px; display: flex; flex-direction: column;
+}
+.mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.kicker { font-size: 20px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: #7fb7ff; }
+.repo { font-size: 19px; color: #93a5c1; }
+.body { flex: 1; display: flex; align-items: center; gap: 40px; }
+.text { flex: 1; min-width: 0; }
+h1 { margin: 0 0 22px; font-weight: 700; letter-spacing: -.03em; line-height: 1; overflow-wrap: anywhere; }
+.hook { margin: 0; font-size: 36px; line-height: 1.24; letter-spacing: -.01em; color: #c9d8ee; max-width: 19em; text-wrap: balance; }
+.art { width: 300px; flex: none; opacity: .95; }
+.stats { display: flex; gap: 0; border: 1px solid rgba(120,160,220,.28); border-radius: 14px; overflow: hidden; background: rgba(8,14,28,.55); }
+.stat { flex: 1; padding: 16px 22px; border-right: 1px solid rgba(120,160,220,.28); }
+.stat:last-child { border-right: 0; }
+.stat b { display: block; font-size: 26px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.stat span { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: #93a5c1; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="kicker mono">Agent Anatomy</div>
+    <div class="repo mono">how production agents do it</div>
+  </div>
+  <div class="body">
+    <div class="text">
+      <h1 style="font-size: 112px">Memory</h1>
+      <p class="hook">No vector database. Memory is markdown files, and the design question is where each file enters the prompt.</p>
+    </div>
+    <svg class="art" viewBox="0 0 300 300" fill="none" aria-hidden="true">
+      <g stroke="#5f93d6" stroke-width="2">
+        <path d="M150 62 V104 M150 104 H62 V140 M150 104 H238 V140 M150 104 V140" />
+        <path d="M62 188 V224 H150 M238 188 V224 H150 M150 188 V246" />
+      </g>
+      <rect x="100" y="18" width="100" height="44" rx="22" fill="#0b3d75" stroke="#7fb7ff" stroke-width="2"/>
+      <rect x="18" y="140" width="88" height="48" rx="6" fill="#0a66c2"/>
+      <rect x="106" y="140" width="88" height="48" rx="6" fill="#5aa2e6"/>
+      <rect x="194" y="140" width="88" height="48" rx="6" fill="#0a66c2"/>
+      <path d="M106 258 a44 12 0 0 1 88 0 v22 a44 12 0 0 1 -88 0 z" fill="#17794a"/>
+      <path d="M106 258 a44 12 0 0 0 88 0" stroke="#0c1a2f" stroke-width="2"/>
+      <g stroke="#0c1a2f" stroke-width="3" stroke-linecap="round" opacity=".55">
+        <path d="M34 158 H90 M34 170 H74 M122 158 H178 M122 170 H162 M210 158 H266 M210 170 H250"/>
+      </g>
+    </svg>
+  </div>
+  <div class="stats"><div class="stat"><b>gemini-cli</b><span class="mono">built in</span></div></div>
+</body>
+</html>

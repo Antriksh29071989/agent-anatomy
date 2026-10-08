@@ -1,0 +1,742 @@
+{
+ "meta": {
+  "question": "How does Gemini CLI implement memory: what stays in context, what is saved to disk, and is a semantic database used?",
+  "title": "Memory",
+  "slug": "memory",
+  "analysed_at": "2026-10-04",
+  "hook": "No vector database. Memory is markdown files, and the design question is where each file enters the prompt.",
+  "site_url": "https://antriksh29071989.github.io/agent-anatomy/reports/memory/"
+ },
+ "answer": "Gemini CLI's memory is plain markdown files, each read in full [^readwhole]. Three tiers decide where each file enters the conversation: global and private project memory go in the system instruction [^sysmem], project and extension files go in the first user message [^sessionmem], and files in subdirectories are appended to a tool's result when that folder is first touched [^jitappend]. The model saves a memory by editing one of these files with its ordinary file tools [^notool]. No semantic or vector database was found.",
+ "citations": {
+  "tiers": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/environmentContext.ts",
+   "start": 62,
+   "end": 66,
+   "expect": "Tiered context model",
+   "claim": "A comment describes three tiers: tier 1 (global) in the system instruction only, tier 2 (extension and project) in the first user message, and tier 3 (subdirectory) in tool output, and the session memory is read at this point."
+  },
+  "created": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/config/config.ts",
+   "start": 1563,
+   "end": 1564,
+   "expect": "new MemoryContextManager",
+   "claim": "During initialisation a `MemoryContextManager` is created and refreshed."
+  },
+  "refresh": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/context/memoryContextManager.ts",
+   "start": 38,
+   "end": 47,
+   "expect": "discoverMemoryPaths",
+   "claim": "`refresh` clears the record of loaded files, discovers the memory paths, loads their contents and categorises them."
+  },
+  "discover": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/context/memoryContextManager.ts",
+   "start": 49,
+   "end": 65,
+   "expect": "getUserProjectMemoryPaths",
+   "claim": "Four sets of paths are discovered: global, extension, environment (only when the folder is trusted) and user project memory."
+  },
+  "filenames": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/tools/memoryTool.ts",
+   "start": 11,
+   "end": 12,
+   "expect": "MEMORY.md",
+   "claim": "The default context filename is `GEMINI.md` and the project memory index filename is `MEMORY.md`."
+  },
+  "globalpath": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 317,
+   "end": 324,
+   "expect": "GEMINI_DIR",
+   "claim": "Global memory files are looked for in the Gemini directory under the user's home directory."
+  },
+  "userproject": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 342,
+   "end": 355,
+   "expect": "PROJECT_MEMORY_INDEX_FILENAME",
+   "claim": "User project memory prefers the `MEMORY.md` index in the project memory directory, and returns it alone when it is readable."
+  },
+  "legacy": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 356,
+   "end": 372,
+   "expect": "legacy",
+   "claim": "If the index is not readable, it falls back to legacy context files in the same directory."
+  },
+  "memdir": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/config/storage.ts",
+   "start": 332,
+   "end": 338,
+   "expect": "'memory'",
+   "claim": "The project memory directory is a `memory` folder inside the project's temp directory."
+  },
+  "envpaths": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 405,
+   "end": 422,
+   "expect": "findUpwardGeminiFiles",
+   "claim": "For each trusted root, the upward search runs from that root to a ceiling, which is the project root found from the boundary markers (by default `.git`) or the trusted root itself if none is found."
+  },
+  "upward": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 480,
+   "end": 508,
+   "expect": "upwardPaths.unshift",
+   "claim": "The upward search checks each directory for context files, puts what it finds in front of the list, and moves to the parent until it reaches the stop directory, the filesystem root or the global Gemini directory."
+  },
+  "extension": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 383,
+   "end": 390,
+   "expect": "contextFiles",
+   "claim": "Extension memory is the context files of active extensions."
+  },
+  "untrusted": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/context/memoryContextManager.ts",
+   "start": 132,
+   "end": 134,
+   "expect": "isTrustedFolder",
+   "claim": "Project memory is set to empty when the folder is not trusted."
+  },
+  "sysmem": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/config/config.ts",
+   "start": 2598,
+   "end": 2608,
+   "expect": "getSystemInstructionMemory",
+   "claim": "The system instruction memory is the global memory, together with the user project memory when that is non-empty."
+  },
+  "sysprompt": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/client.ts",
+   "start": 389,
+   "end": 391,
+   "expect": "setSystemInstruction",
+   "claim": "The system prompt is built with the system instruction memory and set on the chat."
+  },
+  "render": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 553,
+   "end": 561,
+   "expect": "<global_context>",
+   "claim": "Global memory is rendered inside `<global_context>` tags and user project memory inside `<user_project_memory>` tags."
+  },
+  "sessionmem": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/config/config.ts",
+   "start": 2615,
+   "end": 2635,
+   "expect": "<loaded_context>",
+   "claim": "Session memory wraps extension memory in `<extension_context>` and project memory in `<project_context>`, inside `<loaded_context>`, and is empty when neither has content."
+  },
+  "jit": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/tools/jit-context.ts",
+   "start": 20,
+   "end": 39,
+   "expect": "discoverContext",
+   "claim": "`discoverJitContext` asks the memory context manager for context for the accessed path within the workspace directories, and returns an empty string if that fails."
+  },
+  "jitgate": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/context/memoryContextManager.ts",
+   "start": 141,
+   "end": 158,
+   "expect": "loadJitSubdirectoryMemory",
+   "claim": "`discoverContext` returns nothing in an untrusted folder; otherwise it loads subdirectory memory for the accessed path, passing the paths already loaded."
+  },
+  "jitstart": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 559,
+   "end": 572,
+   "expect": "findUpwardGeminiFiles",
+   "claim": "The search starts from the target's parent directory when the target is a file or cannot be stat'ed, and goes up to the ceiling."
+  },
+  "jitskip": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 610,
+   "end": 625,
+   "expect": "cachedIdentities.has",
+   "claim": "Files whose identity is already in the loaded set are skipped."
+  },
+  "jitmark": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/context/memoryContextManager.ts",
+   "start": 160,
+   "end": 167,
+   "expect": "markAsLoaded",
+   "claim": "Newly loaded files are marked as loaded and their identities cached."
+  },
+  "jitappend": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/tools/jit-context.ts",
+   "start": 45,
+   "end": 64,
+   "expect": "Newly Discovered Project Context",
+   "claim": "Discovered context is appended to the tool's content between `--- Newly Discovered Project Context ---` and `--- End Project Context ---`, and the content is returned unchanged when there is none."
+  },
+  "jitread": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/tools/read-file.ts",
+   "start": 216,
+   "end": 216,
+   "expect": "appendJitContext",
+   "claim": "The read-file tool appends just-in-time context to its content."
+  },
+  "jitls": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/tools/ls.ts",
+   "start": 285,
+   "end": 285,
+   "expect": "appendJitContext",
+   "claim": "The ls tool appends just-in-time context to its result."
+  },
+  "notool": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 872,
+   "end": 872,
+   "expect": "save_memory",
+   "claim": "The prompt tells the model to persist long-lived context by editing markdown files with the edit or write-file tool, and states that there is no `save_memory` tool."
+  },
+  "projecttier": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 873,
+   "end": 874,
+   "expect": "Project Instructions",
+   "claim": "The prompt describes project instructions in `./GEMINI.md` as committed to the repo and shared with the team, and subdirectory instructions as scoped to one part of the project."
+  },
+  "privatetier": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 859,
+   "end": 861,
+   "expect": "Private Project Memory",
+   "claim": "The prompt describes private project memory as personal, project-specific notes that must not be committed, with the file kept concise as an index."
+  },
+  "globaltier": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 863,
+   "end": 865,
+   "expect": "Global Personal Memory",
+   "claim": "The prompt describes global personal memory as cross-project preferences and facts about the user, loaded automatically in every session."
+  },
+  "routing": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 875,
+   "end": 879,
+   "expect": "pick exactly one tier per fact",
+   "claim": "The routing rules say to pick exactly one tier per fact, to ask the user when a fact could belong to more than one, and never to duplicate a fact across the four tiers."
+  },
+  "reload": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/commands/memory.ts",
+   "start": 57,
+   "end": 64,
+   "expect": "updateSystemInstructionIfInitialized",
+   "claim": "The refresh command refreshes the memory context manager and then updates the system instruction."
+  },
+  "autooff": {
+   "repo": "gemini-cli",
+   "path": "packages/cli/src/config/settingsSchema.ts",
+   "start": 2432,
+   "end": 2439,
+   "expect": "default: false",
+   "claim": "The experimental `autoMemory` setting defaults to false; its description says patches are written under an inbox folder and nothing is applied until approved."
+  },
+  "autostart": {
+   "repo": "gemini-cli",
+   "path": "packages/cli/src/utils/autoMemory.ts",
+   "start": 13,
+   "end": 20,
+   "expect": "isAutoMemoryEnabled",
+   "claim": "The memory service is started only when auto memory is enabled."
+  },
+  "autodirs": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1134,
+   "end": 1138,
+   "expect": "'chats'",
+   "claim": "The memory service works with the project's memory directory, a skills directory, and the `chats` directory under the project temp directory."
+  },
+  "lock": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1145,
+   "end": 1149,
+   "expect": "tryAcquireLock",
+   "claim": "When the service cannot acquire the lock, it returns before running extraction."
+  },
+  "throttle": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1178,
+   "end": 1190,
+   "expect": "MIN_EXTRACTION_INTERVAL_MS",
+   "claim": "The service returns early when the most recent run was less than the minimum extraction interval ago."
+  },
+  "autoconst": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 55,
+   "end": 59,
+   "expect": "MIN_USER_MESSAGES = 10",
+   "claim": "The minimum extraction interval is 30 minutes, the minimum is 10 user messages, the minimum idle time is 3 hours, the session index holds at most 50, and a batch of new sessions at most 10."
+  },
+  "eligible": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 554,
+   "end": 568,
+   "expect": "shouldProcessConversation",
+   "claim": "A session is skipped if it is a subagent session, if it was updated less than the minimum idle time ago, or if it has fewer than the minimum number of user messages."
+  },
+  "extractagent": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1258,
+   "end": 1264,
+   "expect": "SkillExtractionAgent",
+   "claim": "A `SkillExtractionAgent` definition is built from inputs that include the skills directory, the session index, a summary of existing skills, the memory directory and a summary of the pending inbox."
+  },
+  "extractrun": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1328,
+   "end": 1331,
+   "expect": "Extract skills",
+   "claim": "The executor is run with the request to extract skills from the provided sessions."
+  },
+  "record": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/chatRecordingService.ts",
+   "start": 892,
+   "end": 899,
+   "expect": "appendFileSync",
+   "claim": "Each record is serialised as one JSON line and appended to the conversation file."
+  },
+  "recorddir": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/chatRecordingService.ts",
+   "start": 755,
+   "end": 760,
+   "expect": "'chats'",
+   "claim": "A new session's chats directory is `chats` under the project temp directory."
+  },
+  "history": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/geminiChat.ts",
+   "start": 421,
+   "end": 421,
+   "expect": "AgentChatHistory",
+   "claim": "The chat object keeps its history in an `AgentChatHistory` created from the initial history."
+  },
+  "embed": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/core/baseLlmClient.ts",
+   "start": 191,
+   "end": 201,
+   "expect": "generateEmbedding",
+   "claim": "`BaseLlmClient` has a `generateEmbedding` method that calls `embedContent` with the configured embedding model."
+  },
+  "readwhole": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 221,
+   "end": 234,
+   "expect": "readFile",
+   "claim": "Each memory file is read in full with `readFile`, and its content is then processed for imports."
+  },
+  "concat": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/utils/memoryDiscovery.ts",
+   "start": 295,
+   "end": 310,
+   "expect": "Context from",
+   "claim": "Files are concatenated with each one between `--- Context from: <path> ---` and `--- End of Context from: <path> ---` lines, and a file whose content is empty after trimming is dropped."
+  },
+  "skillscreated": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/services/memoryService.ts",
+   "start": 1335,
+   "end": 1343,
+   "expect": "skillsCreated",
+   "claim": "After the run, entries in the skills directory that were not there before and do not end in `.patch` are counted as newly created skills."
+  },
+  "wrap": {
+   "repo": "gemini-cli",
+   "path": "packages/core/src/prompts/snippets.ts",
+   "start": 574,
+   "end": 575,
+   "expect": "<loaded_context>",
+   "claim": "The rendered memory sections are wrapped in a `<loaded_context>` block preceded by a horizontal rule, and nothing is rendered when there are no sections."
+  }
+ },
+ "repos": [
+  {
+   "id": "gemini-cli",
+   "repo": "google-gemini/gemini-cli",
+   "commit": "fb972b2f87fe7d5b06d37eac711490162d98de2c",
+   "commit_date": "2026-10-02",
+   "kind": "product",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "what": "Google's terminal coding agent",
+   "verdict": "implements",
+   "summary": "File-based memory managed by a `MemoryContextManager` [^created]: it discovers four sets of markdown files [^discover] and delivers them in three tiers [^tiers], with writes done as ordinary file edits [^notool]."
+  }
+ ],
+ "comparison": {
+  "dimensions": [
+   "In the context window",
+   "On disk, loaded at start",
+   "On disk, loaded on demand",
+   "How memory is written",
+   "Semantic database"
+  ],
+  "rows": [
+   {
+    "repo": "gemini-cli",
+    "cells": [
+     "The conversation itself, held in the chat object [^history], plus whatever the three tiers have loaded [^tiers]",
+     "Global `GEMINI.md` under the home directory [^globalpath], the private `MEMORY.md` index for the project [^userproject], and `GEMINI.md` files from the workspace up to the project root [^envpaths], plus active extensions' context files [^extension]",
+     "`GEMINI.md` files in subdirectories, discovered when a file tool touches that folder [^jit] and appended to the tool result [^jitappend]",
+     "The model edits the markdown files with its edit and write tools; there is no memory tool [^notool]. An experimental background extractor is off by default, and its setting describes its output as patches held for review [^autooff]",
+     "None found"
+    ]
+   }
+  ]
+ },
+ "deep_dives": [
+  {
+   "repo": "gemini-cli",
+   "headline": "Markdown files, three delivery tiers, and writes that are just file edits",
+   "how_it_works": [
+    "Memory here is a set of markdown files. At start-up the configuration creates a `MemoryContextManager` and refreshes it [^created]. A refresh clears its record of what is loaded, discovers the files, reads them and sorts them into categories [^refresh]. It looks in four places: global, extension, the workspace (only in a trusted folder) and the user's private project memory [^discover].",
+    "The file names are `GEMINI.md` for instructions and `MEMORY.md` for the private index [^filenames]. Global memory is in the Gemini directory under the user's home [^globalpath]. Private project memory is the `MEMORY.md` index in a per-project memory directory [^userproject], which is a `memory` folder inside the project's temp directory [^memdir]; an older file name is used as a fallback [^legacy]. Project files are found by walking up from each workspace root to the project root, marked by `.git` by default [^envpaths], collecting a context file at each level [^upward]. Each file is read in full [^readwhole] and joined to the others between lines naming its path; empty files are dropped [^concat].",
+    "The tiers are about where the text goes, as a comment in the code spells out [^tiers]. Tier 1 is the system instruction: global memory, plus the private project memory when it has content [^sysmem], built into the system prompt [^sysprompt] under their own tags [^render]. Tier 2 is the first user message: extension and project files, wrapped in `<loaded_context>` [^sessionmem].",
+    "Tier 3 is loaded on demand. When a file tool touches a path, it asks for context for that path [^jit]. The search starts in the file's own folder and walks up to the project ceiling [^jitstart], skips every file that is already loaded [^jitskip], and marks the new ones as loaded [^jitmark]. Whatever it finds is appended to the tool's result between two marker lines [^jitappend]. The read-file tool [^jitread] and the ls tool [^jitls] both do this.",
+    "Saving a memory is not a special operation. The prompt tells the model to edit the markdown files directly and says there is no `save_memory` tool [^notool]. It names four destinations: the project's `GEMINI.md` and subdirectory `GEMINI.md` files [^projecttier], the private project memory [^privatetier] and the global personal memory [^globaltier]. The routing rules are strict: one tier per fact, ask when unsure, never duplicate [^routing]. A refresh command re-reads the files and updates the system instruction [^reload].",
+    "There is also an experimental background path, off by default [^autooff] and started only when enabled [^autostart]. It reads past sessions from the chats directory [^autodirs], does not run extraction if another instance holds the lock [^lock] or if the last run was under 30 minutes ago [^throttle][^autoconst], and only considers sessions that are not subagent sessions, have been idle for 3 hours and have at least 10 user messages [^eligible][^autoconst]. An extraction agent then runs over them [^extractagent][^extractrun]. The setting's description says every change is written as a patch file under an inbox folder and nothing is applied until approved [^autooff]; the service also detects new skills created in the skills directory [^skillscreated]."
+   ],
+   "diagram": {
+    "caption": "Memory files on the left, the three places they enter the conversation on the right [^tiers].",
+    "mermaid": "flowchart LR\n  g[(\"Global GEMINI.md<br/>home directory\")]:::store\n  p[(\"Private MEMORY.md<br/>per project\")]:::store\n  e[(\"Extension context files\")]:::store\n  r[(\"Project GEMINI.md<br/>workspace up to root\")]:::store\n  s[(\"Subdirectory GEMINI.md\")]:::store\n  t1[\"Tier 1<br/>system instruction\"]:::system\n  t2[\"Tier 2<br/>first user message\"]:::system\n  t3[\"Tier 3<br/>tool result\"]:::system\n  m[\"Model\"]:::external\n  g --> t1\n  p --> t1\n  e --> t2\n  r --> t2\n  s -->|\"when a tool touches the folder\"| t3\n  t1 --> m\n  t2 --> m\n  t3 --> m\n  m -.->|\"edits files to save a memory\"| p\n"
+   },
+   "key_parts": [
+    {
+     "name": "MemoryContextManager",
+     "path": "packages/core/src/context/memoryContextManager.ts",
+     "role": "Discovers, loads and categorises memory files; serves just-in-time context"
+    },
+    {
+     "name": "getSystemInstructionMemory",
+     "path": "packages/core/src/config/config.ts",
+     "role": "Tier 1: what goes in the system instruction"
+    },
+    {
+     "name": "getSessionMemory",
+     "path": "packages/core/src/config/config.ts",
+     "role": "Tier 2: what goes in the first user message"
+    },
+    {
+     "name": "discoverJitContext",
+     "path": "packages/core/src/tools/jit-context.ts",
+     "role": "Tier 3: called by file tools to fetch and append subdirectory context"
+    },
+    {
+     "name": "memoryDiscovery",
+     "path": "packages/core/src/utils/memoryDiscovery.ts",
+     "role": "Finds the files for each tier, including the upward and just-in-time searches"
+    },
+    {
+     "name": "toolUsageRememberingFacts",
+     "path": "packages/core/src/prompts/snippets.ts",
+     "role": "The prompt section that tells the model where to write each kind of memory"
+    },
+    {
+     "name": "startMemoryService",
+     "path": "packages/core/src/services/memoryService.ts",
+     "role": "The experimental background extractor over past sessions"
+    },
+    {
+     "name": "ChatRecordingService",
+     "path": "packages/core/src/services/chatRecordingService.ts",
+     "role": "Appends every session to a JSONL file on disk"
+    }
+   ],
+   "excerpts": [
+    {
+     "path": "packages/core/src/utils/environmentContext.ts",
+     "start": 62,
+     "end": 66,
+     "expect": "Tiered context model",
+     "title": "The three tiers, in the authors' words"
+    },
+    {
+     "path": "packages/core/src/config/config.ts",
+     "start": 2591,
+     "end": 2608,
+     "expect": "getSystemInstructionMemory",
+     "title": "Tier 1: the system instruction",
+     "note": "Private project memory joins global memory here when it has content [^sysmem]."
+    },
+    {
+     "path": "packages/core/src/config/config.ts",
+     "start": 2611,
+     "end": 2635,
+     "expect": "getSessionMemory",
+     "title": "Tier 2: the first user message",
+     "note": "Extension and project files are wrapped in tags inside `<loaded_context>` [^sessionmem]."
+    },
+    {
+     "path": "packages/core/src/context/memoryContextManager.ts",
+     "start": 141,
+     "end": 172,
+     "expect": "discoverContext",
+     "title": "Tier 3: context loaded when a path is touched",
+     "note": "Nothing is loaded in an untrusted folder, and already-loaded paths are passed in [^jitgate]."
+    },
+    {
+     "path": "packages/core/src/services/memoryService.ts",
+     "start": 554,
+     "end": 568,
+     "expect": "shouldProcessConversation",
+     "title": "Which past sessions the background extractor will read",
+     "note": "Subagent sessions, recently active sessions and short sessions are skipped [^eligible]."
+    }
+   ],
+   "gotchas": [
+    "Each file is read in full [^readwhole], and the prompt asks the model to keep the private memory file concise and use it as an index [^privatetier].",
+    "In an untrusted folder the project's files are not loaded at start [^untrusted] and nothing is discovered on demand [^jitgate].",
+    "A subdirectory file is delivered once: later touches of the same folder find it already loaded [^jitskip].",
+    "Every session is also written to disk, one JSON line per record [^record], under the project's chats directory [^recorddir]. That is a transcript for resuming and for the background extractor [^autodirs], not something loaded into new conversations by the tiers.",
+    "The background extractor is experimental and off by default; its setting describes the output as held for approval [^autooff].",
+    "An embedding method exists on the model client [^embed], but no code was found that calls it."
+   ],
+   "searched": [
+    "Searched `packages/core/src` and `packages/cli/src` (excluding tests) for: embedding, vector store, vector db, vector search, sqlite, lancedb, chroma, pinecone, faiss, pgvector, cosine. The only relevant hit is the unused `generateEmbedding` method.",
+    "Searched all packages for callers of `generateEmbedding`: none outside its own definition.",
+    "Checked the `dependencies` of the core and cli packages for a vector or embedded database: none of sqlite, lancedb, chroma, faiss, hnsw found.",
+    "Searched the tool names and registry for a `save_memory` tool: not found; the prompt itself says there is none."
+   ]
+  }
+ ],
+ "build_your_own": [
+  "Start with files. Markdown that a person can read, edit and commit covers most of what an agent needs to remember, with no extra infrastructure.",
+  "Decide where each kind of memory enters the prompt. Stable, personal facts suit the system instruction; project context suits the first message; narrow context can wait until it is needed.",
+  "Load subdirectory instructions when a tool touches that folder, and deliver each file once.",
+  "Keep one home per fact. Tell the model which file each kind of fact belongs in and to ask when it is unsure, or the same note ends up in three places.",
+  "Let the model write memory with the file tools it already has; a dedicated memory tool is optional.",
+  "Do not load project files from a folder the user has not trusted.",
+  "If you add automatic extraction from past sessions, gate it: wait until a session is idle, require some length, and hold the result for the user to approve."
+ ],
+ "implementation": {
+  "title": "File-based memory in about 130 lines of Python",
+  "intro": "One class and four small functions, standard library only. It follows Gemini CLI's design: find the files for each tier, deliver tier 1 for the system instruction and tier 2 for the first message, and discover tier 3 when a tool touches a path. A write is an ordinary file edit followed by `refresh()`.",
+  "dir": "impl",
+  "files": [
+   "file_memory.py",
+   "test_file_memory.py"
+  ],
+  "run": "python3 -m unittest -v",
+  "mirrors": [
+   {
+    "id": "filenames",
+    "what": "Instruction files are GEMINI.md and the private index is MEMORY.md",
+    "file": "file_memory.py",
+    "start": 17,
+    "end": 18,
+    "expect": "MEMORY.md",
+    "citation": "filenames"
+   },
+   {
+    "id": "upward",
+    "what": "Walk from a directory to its parents, collecting context files outermost first, until the stop directory",
+    "file": "file_memory.py",
+    "start": 36,
+    "end": 46,
+    "expect": "found.insert(0",
+    "citation": "upward"
+   },
+   {
+    "id": "refresh",
+    "what": "A refresh forgets what was loaded and re-reads every tier",
+    "file": "file_memory.py",
+    "start": 74,
+    "end": 76,
+    "expect": "self.loaded.clear()",
+    "citation": "refresh"
+   },
+   {
+    "id": "globalpath",
+    "what": "Global memory is under the Gemini directory in the user's home",
+    "file": "file_memory.py",
+    "start": 70,
+    "end": 70,
+    "expect": "GLOBAL_DIR",
+    "citation": "globalpath"
+   },
+   {
+    "id": "userproject",
+    "what": "Private project memory is the MEMORY.md index in the project memory directory",
+    "file": "file_memory.py",
+    "start": 71,
+    "end": 71,
+    "expect": "MEMORY_INDEX_FILENAME",
+    "citation": "userproject"
+   },
+   {
+    "id": "legacy",
+    "what": "If the index is missing, fall back to the older private file",
+    "file": "file_memory.py",
+    "start": 80,
+    "end": 82,
+    "expect": "legacy",
+    "citation": "legacy"
+   },
+   {
+    "id": "trusted",
+    "what": "Project files are read only in a trusted folder",
+    "file": "file_memory.py",
+    "start": 84,
+    "end": 84,
+    "expect": "self.trusted",
+    "citation": "discover"
+   },
+   {
+    "id": "envpaths",
+    "what": "The upward search stops at the project root, or at the workspace root if there is none",
+    "file": "file_memory.py",
+    "start": 86,
+    "end": 88,
+    "expect": "find_project_root(root) or",
+    "citation": "envpaths"
+   },
+   {
+    "id": "sysmem",
+    "what": "Tier 1 is global memory plus private project memory when it has content",
+    "file": "file_memory.py",
+    "start": 94,
+    "end": 101,
+    "expect": "<user_project_memory>",
+    "citation": "sysmem"
+   },
+   {
+    "id": "render",
+    "what": "Global memory and private project memory each get their own tag",
+    "file": "file_memory.py",
+    "start": 98,
+    "end": 100,
+    "expect": "<global_context>",
+    "citation": "render"
+   },
+   {
+    "id": "sessionmem",
+    "what": "Tier 2 wraps extension and project memory in tags inside loaded_context, and is empty when there is neither",
+    "file": "file_memory.py",
+    "start": 103,
+    "end": 110,
+    "expect": "<loaded_context>",
+    "citation": "sessionmem"
+   },
+   {
+    "id": "jitgate",
+    "what": "Nothing is discovered on demand in an untrusted folder",
+    "file": "file_memory.py",
+    "start": 114,
+    "end": 115,
+    "expect": "return \"\"",
+    "citation": "jitgate"
+   },
+   {
+    "id": "jitstart",
+    "what": "Start from the path's own folder if it is a directory, otherwise from its parent, and go up to the ceiling",
+    "file": "file_memory.py",
+    "start": 123,
+    "end": 124,
+    "expect": "os.path.dirname(target)",
+    "citation": "jitstart"
+   },
+   {
+    "id": "jitskip",
+    "what": "Files already loaded are skipped",
+    "file": "file_memory.py",
+    "start": 124,
+    "end": 124,
+    "expect": "not in self.loaded",
+    "citation": "jitskip"
+   },
+   {
+    "id": "jitmark",
+    "what": "Newly delivered files are marked as loaded",
+    "file": "file_memory.py",
+    "start": 125,
+    "end": 125,
+    "expect": "self.loaded.update",
+    "citation": "jitmark"
+   },
+   {
+    "id": "jitappend",
+    "what": "Discovered context is appended between two marker lines, and output is unchanged when there is none",
+    "file": "file_memory.py",
+    "start": 129,
+    "end": 131,
+    "expect": "if context else tool_output",
+    "citation": "jitappend"
+   },
+   {
+    "id": "concat",
+    "what": "Each file sits between lines naming its path, and a file that is empty after trimming is dropped",
+    "file": "file_memory.py",
+    "start": 49,
+    "end": 57,
+    "expect": "End of Context from",
+    "citation": "concat"
+   }
+  ],
+  "simplifications": [
+   "Python, not TypeScript: the logic is rewritten, not copied.",
+   "One context file name, `GEMINI.md`; the original supports a configurable list of names.",
+   "Files are identified by their real path. The original also deduplicates by file identity to cope with case-insensitive filesystems.",
+   "The `@file` import processing that the original applies to each memory file is not reproduced.",
+   "Tier 1 is returned as bare `<global_context>` and `<user_project_memory>` blocks. The original wraps them in a `<loaded_context>` block after a horizontal rule [^wrap], adds marker lines around the private memory index, and uses a different plain-text layout when there is only global memory.",
+   "MCP server instructions, which the original adds to project memory, are left out.",
+   "The upward search does not have the original's extra stop at the global Gemini directory.",
+   "No background extraction from past sessions, no inbox, and no session recording.",
+   "Whether a folder is trusted is a constructor argument; the original takes it from its trust settings."
+  ]
+ },
+ "method": {
+  "scope": "Read: the memory context manager, the file discovery functions, the two configuration methods that assemble tier 1 and tier 2, the just-in-time context module and two tools that call it, the prompt section on memory files, the refresh command, the entry and gating code of the background memory service, and the session recording append path.",
+  "limits": [
+   "The extraction agent's own prompt and the inbox patch format were not read; the report covers only when the background service runs and what it is given.",
+   "How a mid-session edit of a memory file reaches the system instruction, other than through the refresh command, was not traced.",
+   "The `@file` import processor for memory files and the separate skills system were not examined.",
+   "\"No semantic database\" means none was found by the searches listed; it is not a statement about server-side behaviour.",
+   "Behaviour was read from source, not observed by running the agent."
+  ]
+ }
+}

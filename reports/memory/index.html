@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory - Agent Anatomy</title>
+<meta name="description" content="No vector database. Memory is markdown files, and the design question is where each file enters the prompt.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Memory - Agent Anatomy">
+<meta property="og:description" content="No vector database. Memory is markdown files, and the design question is where each file enters the prompt.">
+<meta name="twitter:title" content="Memory - Agent Anatomy">
+<meta name="twitter:description" content="No vector database. Memory is markdown files, and the design question is where each file enters the prompt.">
+<meta property="og:url" content="https://antriksh29071989.github.io/agent-anatomy/reports/memory/">
+<meta property="og:image" content="https://antriksh29071989.github.io/agent-anatomy/reports/memory/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Memory - Agent Anatomy: No vector database. Memory is markdown files, and the design question is where each file enters the prompt.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://antriksh29071989.github.io/agent-anatomy/reports/memory/card.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+:root {
+  --page: #e7e1d1; --sheet: #f8f4e8; --well: #efe8d4; --ink: #1b1a17; --ink-soft: #45423a; --ink-faint: #7c7563;
+  --rule: #201e19; --rule-soft: rgba(32,30,25,.28); --rule-hair: rgba(32,30,25,.16);
+  --accent: #8a1f11; --on-accent: #f8f4e8;
+  --ok: #2f5d3a; --mid: #7a5a12; --spec: #4b3f7a; --none: #6b6657;
+  --d-system: #8a1f11; --d-system-ink: #f8f4e8; --d-component: #f8f4e8; --d-component-ink: #1b1a17;
+  --d-ext: #d9d0bd; --d-ext-ink: #1b1a17; --d-store: #1b1a17; --d-store-ink: #f8f4e8; --d-queue: #c9a24a; --d-queue-ink: #1b1a17;
+  --d-line: #45423a; --d-group: #e7e1d1;
+  --display: "Lora", Georgia, "Times New Roman", serif;
+  --body: "PT Serif", Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #17150f; --sheet: #221f19; --well: #2a2520; --ink: #d9d0bd; --ink-soft: #b0a790; --ink-faint: #7f7663;
+    --rule: #b0a790; --rule-soft: rgba(217,208,189,.22); --rule-hair: rgba(217,208,189,.12);
+    --accent: #cc9a56; --on-accent: #221f19;
+    --ok: #8fbf9a; --mid: #d8b25e; --spec: #b3a6e6; --none: #9a927f;
+    --d-system: #cc9a56; --d-system-ink: #17150f; --d-component: #2a2520; --d-component-ink: #d9d0bd;
+    --d-ext: #4a4438; --d-ext-ink: #d9d0bd; --d-store: #d9d0bd; --d-store-ink: #17150f; --d-queue: #8a6a2a; --d-queue-ink: #f8f4e8;
+    --d-line: #b0a790; --d-group: #17150f;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 17px/1.62 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+code { font: .82em var(--mono); background: var(--well); border: 1px solid var(--rule-hair); padding: .08em .36em; border-radius: 3px; overflow-wrap: anywhere; }
+.sheet { max-width: 860px; margin: 0 auto; background: var(--sheet); padding: 26px 56px 56px; min-height: 100vh; box-shadow: 0 0 0 1px var(--rule-hair); }
+
+.topline { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font: 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); padding-bottom: 14px; border-bottom: 1px solid var(--rule-soft); }
+.topline .brand { font: 700 19px/1 var(--display); letter-spacing: -.01em; text-transform: none; color: var(--ink); }
+.topline em { font-style: italic; letter-spacing: .06em; }
+.topline a:hover { color: var(--accent); }
+.contents { margin: 26px 0 0; padding: 14px 0 0; border-top: 1px solid var(--rule-soft); font: 14.5px/1.9 var(--body); color: var(--ink-faint); }
+.contents b { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; margin-right: 10px; }
+.contents a { color: var(--ink-soft); border-bottom: 1px solid var(--rule-soft); margin-right: 14px; white-space: nowrap; }
+.contents a:hover { color: var(--accent); border-color: var(--accent); }
+
+.kicker { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+.kicker::before { content: "\2022\00a0"; }
+.reviewed { font: italic 14.5px/1.4 var(--display); color: var(--ok); margin: -4px 0 14px; }
+.reviewed::before { content: "\2713\00a0"; font-style: normal; }
+.reviewed.draft { color: var(--accent); }
+.reviewed.draft::before { content: "\26A0\00a0"; }
+sup.cite { font-size: .62em; line-height: 0; margin-left: 1px; }
+sup.cite a { font: 700 1em var(--mono); color: var(--accent); padding: 0 2px; border-radius: 2px; }
+sup.cite a:hover { background: var(--accent); color: var(--on-accent); }
+sup.cite.next::before { content: ","; color: var(--ink-faint); }
+ol.evidence { margin: 0; padding: 0 0 0 30px; border-top: 2px solid var(--rule); font-size: 15px; }
+ol.evidence li { padding: 9px 0; border-bottom: 1px solid var(--rule-hair); color: var(--ink-soft); }
+ol.evidence li::marker { font: 700 12px var(--mono); color: var(--accent); }
+ol.evidence a { font: 12px/1.5 var(--mono); color: var(--accent); overflow-wrap: anywhere; display: block; margin-top: 2px; }
+ol.evidence a:hover { text-decoration: underline; }
+.byline { font: 11.5px/1.5 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 12px; }
+h1 { font: 700 clamp(32px, 5.4vw, 48px)/1.1 var(--display); letter-spacing: -.018em; margin: 0 0 20px; text-wrap: balance; }
+h2 { font: 700 clamp(25px, 3.6vw, 32px)/1.18 var(--display); letter-spacing: -.012em; margin: 0 0 14px; }
+h3 { font: 700 20px/1.25 var(--display); margin: 0 0 8px; }
+h4 { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); margin: 30px 0 12px; padding-top: 12px; border-top: 1px solid var(--rule-soft); }
+p { margin: 0 0 16px; color: var(--ink-soft); }
+.dropcap::first-letter { font: 700 3.5em/.82 var(--display); float: left; color: var(--accent); padding: 5px 8px 0 0; }
+.head { padding: 34px 0 6px; }
+.answer { font: 400 21px/1.55 var(--display); color: var(--ink); margin-bottom: 22px; }
+.repos { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--rule); }
+.repos li { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); }
+.repos a { font: 700 17px var(--display); overflow-wrap: anywhere; }
+.repos a:hover { color: var(--accent); }
+.repos span { font: 11px/1.6 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.cap { font: italic 13.5px/1.45 var(--display); color: var(--ink-faint); margin: 10px 0 0; }
+.verdict { font: 700 10.5px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; }
+.verdict.implements { color: var(--ok); } .verdict.partial { color: var(--mid); } .verdict.delegates { color: var(--spec); } .verdict.absent { color: var(--none); }
+.tags { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; margin-bottom: 10px; }
+.tags .plain { font: 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+
+section { padding: 44px 0 4px; }
+.sub { font: italic 15.5px/1.45 var(--display); color: var(--ink-faint); margin: -6px 0 16px; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+th { text-align: left; font: 700 11px/1.3 var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint); padding: 10px 16px 9px 0; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; min-width: 130px; color: var(--ink-soft); }
+td.who { font: 700 17px var(--display); color: var(--ink); white-space: nowrap; min-width: 0; }
+.glance { margin: 0; }
+.glance > div { border-top: 2px solid var(--rule); padding: 12px 0 2px; margin-bottom: 22px; }
+.glance h3 { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+.glance dl { margin: 0; display: grid; grid-template-columns: 170px 1fr; }
+.glance dt { font: 700 11px/1.9 var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint); padding: 9px 14px 9px 0; border-top: 1px solid var(--rule-hair); }
+.glance dd { margin: 0; padding: 9px 0; border-top: 1px solid var(--rule-hair); color: var(--ink-soft); }
+@media (max-width: 600px) { .glance dl { grid-template-columns: 1fr; } .glance dd { border-top: 0; padding-top: 0; } }
+td.who .verdict { display: block; margin-top: 7px; }
+.parts td:first-child { font: 700 13px/1.6 var(--mono); color: var(--ink); white-space: nowrap; }
+.parts td.path { font: 12.5px/1.6 var(--mono); overflow-wrap: anywhere; }
+.parts td.path a, .excerpt header a { color: var(--accent); }
+.parts td.path a:hover, .excerpt header a:hover { text-decoration: underline; }
+
+.lead { font: italic 400 19.5px/1.55 var(--display); color: var(--ink); margin-bottom: 18px; }
+.canvas { padding: 22px 12px; overflow-x: auto; text-align: center; background: var(--well); border-radius: 4px; }
+.canvas svg { max-width: 100%; height: auto; }
+.canvas svg p { color: inherit; margin: 0; }
+.canvas svg .edgeLabel, .canvas svg .edgeLabel p, .canvas svg .edgeLabel span { color: var(--ink) !important; fill: var(--ink) !important; background-color: var(--well) !important; font-size: 12.5px; font-style: italic; }
+.canvas pre { text-align: left; font: 12.5px/1.5 var(--mono); color: var(--ink-faint); margin: 0; white-space: pre-wrap; }
+.note { font: italic 13.5px/1.5 var(--display); color: var(--accent); margin: 0 0 10px; text-align: left; }
+
+.excerpt { background: var(--well); border-radius: 4px; margin: 0 0 18px; border-left: 3px solid var(--accent); }
+.excerpt header { display: flex; justify-content: space-between; gap: 6px 16px; align-items: baseline; flex-wrap: wrap; padding: 13px 16px 10px; border-bottom: 1px solid var(--rule-soft); }
+.excerpt header b { font: 700 17px/1.3 var(--display); }
+.excerpt header a, .excerpt header span { font: 12px/1.4 var(--mono); overflow-wrap: anywhere; }
+.excerpt pre { margin: 0; padding: 12px 0; overflow-x: auto; font: 12.5px/1.62 var(--mono); color: var(--ink); tab-size: 2; }
+.excerpt .ln { display: block; padding: 0 16px 0 0; white-space: pre; }
+.excerpt .ln::before { content: attr(data-n); display: inline-block; width: 52px; padding-right: 14px; text-align: right; color: var(--ink-faint); user-select: none; }
+.excerpt p { margin: 0; padding: 11px 16px 13px; border-top: 1px solid var(--rule-soft); font: italic 15px/1.5 var(--display); color: var(--ink-soft); }
+.runline { font-size: 15px; color: var(--ink-soft); }
+.runline a.dl { color: var(--accent); border-bottom: 1px solid var(--rule-soft); font: 13px var(--mono); }
+.parts td.what { font: 15px/1.5 var(--body); color: var(--ink-soft); white-space: normal; min-width: 240px; }
+details.more { margin: 0 0 18px; }
+details.more summary { cursor: pointer; font: 700 11.5px/1 var(--body); letter-spacing: .13em; text-transform: uppercase; color: var(--accent); padding: 10px 0; }
+details.more .excerpt { margin-top: 8px; }
+ul.plain { margin: 0; padding: 0; list-style: none; }
+ul.plain li { padding: 9px 0 9px 20px; border-bottom: 1px solid var(--rule-hair); position: relative; color: var(--ink-soft); }
+ul.plain li::before { content: "\2022"; position: absolute; left: 2px; color: var(--accent); }
+ul.plain li:last-child { border-bottom: 0; }
+.grid > div { padding: 16px 0 4px; border-top: 1px solid var(--rule-soft); }
+.steps { counter-reset: t; list-style: none; padding: 0; margin: 0; }
+.steps li { counter-increment: t; position: relative; padding: 13px 0 13px 46px; border-top: 1px solid var(--rule-soft); font-size: 17.5px; color: var(--ink-soft); }
+.steps li:first-child { border-top: 2px solid var(--rule); }
+.steps li::before { content: counter(t); position: absolute; left: 4px; top: 9px; font: 700 26px var(--display); color: var(--accent); }
+footer { border-top: 2px solid var(--rule); margin-top: 44px; padding-top: 16px; font: 14.5px/1.55 var(--body); color: var(--ink-faint); }
+footer strong { font: 700 11.5px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+footer ul { padding-left: 18px; margin: 8px 0 14px; }
+footer a { border-bottom: 1px solid var(--accent); color: var(--ink-soft); }
+footer .gen { font: italic 13.5px var(--display); }
+@media (max-width: 760px) {
+  .sheet { padding: 20px 20px 36px; }
+  .answer { font-size: 19px; }
+}
+@media print { .contents { display: none; } .excerpt, section { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="sheet" id="app"></div>
+<script type="application/json" id="aa-data">{"meta": {"question": "How does Gemini CLI implement memory: what stays in context, what is saved to disk, and is a semantic database used?", "title": "Memory", "slug": "memory", "analysed_at": "2026-10-04", "hook": "No vector database. Memory is markdown files, and the design question is where each file enters the prompt.", "site_url": "https://antriksh29071989.github.io/agent-anatomy/reports/memory/"}, "answer": "Gemini CLI's memory is plain markdown files, each read in full [^readwhole]. Three tiers decide where each file enters the conversation: global and private project memory go in the system instruction [^sysmem], project and extension files go in the first user message [^sessionmem], and files in subdirectories are appended to a tool's result when that folder is first touched [^jitappend]. The model saves a memory by editing one of these files with its ordinary file tools [^notool]. No semantic or vector database was found.", "citations": {"tiers": {"repo": "gemini-cli", "path": "packages/core/src/utils/environmentContext.ts", "start": 62, "end": 66, "claim": "A comment describes three tiers: tier 1 (global) in the system instruction only, tier 2 (extension and project) in the first user message, and tier 3 (subdirectory) in tool output, and the session memory is read at this point.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/environmentContext.ts#L62-L66"}, "created": {"repo": "gemini-cli", "path": "packages/core/src/config/config.ts", "start": 1563, "end": 1564, "claim": "During initialisation a `MemoryContextManager` is created and refreshed.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts#L1563-L1564"}, "refresh": {"repo": "gemini-cli", "path": "packages/core/src/context/memoryContextManager.ts", "start": 38, "end": 47, "claim": "`refresh` clears the record of loaded files, discovers the memory paths, loads their contents and categorises them.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L38-L47"}, "discover": {"repo": "gemini-cli", "path": "packages/core/src/context/memoryContextManager.ts", "start": 49, "end": 65, "claim": "Four sets of paths are discovered: global, extension, environment (only when the folder is trusted) and user project memory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L49-L65"}, "filenames": {"repo": "gemini-cli", "path": "packages/core/src/tools/memoryTool.ts", "start": 11, "end": 12, "claim": "The default context filename is `GEMINI.md` and the project memory index filename is `MEMORY.md`.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/memoryTool.ts#L11-L12"}, "globalpath": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 317, "end": 324, "claim": "Global memory files are looked for in the Gemini directory under the user's home directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L317-L324"}, "userproject": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 342, "end": 355, "claim": "User project memory prefers the `MEMORY.md` index in the project memory directory, and returns it alone when it is readable.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L342-L355"}, "legacy": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 356, "end": 372, "claim": "If the index is not readable, it falls back to legacy context files in the same directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L356-L372"}, "memdir": {"repo": "gemini-cli", "path": "packages/core/src/config/storage.ts", "start": 332, "end": 338, "claim": "The project memory directory is a `memory` folder inside the project's temp directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/storage.ts#L332-L338"}, "envpaths": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 405, "end": 422, "claim": "For each trusted root, the upward search runs from that root to a ceiling, which is the project root found from the boundary markers (by default `.git`) or the trusted root itself if none is found.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L405-L422"}, "upward": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 480, "end": 508, "claim": "The upward search checks each directory for context files, puts what it finds in front of the list, and moves to the parent until it reaches the stop directory, the filesystem root or the global Gemini directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L480-L508"}, "extension": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 383, "end": 390, "claim": "Extension memory is the context files of active extensions.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L383-L390"}, "untrusted": {"repo": "gemini-cli", "path": "packages/core/src/context/memoryContextManager.ts", "start": 132, "end": 134, "claim": "Project memory is set to empty when the folder is not trusted.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L132-L134"}, "sysmem": {"repo": "gemini-cli", "path": "packages/core/src/config/config.ts", "start": 2598, "end": 2608, "claim": "The system instruction memory is the global memory, together with the user project memory when that is non-empty.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts#L2598-L2608"}, "sysprompt": {"repo": "gemini-cli", "path": "packages/core/src/core/client.ts", "start": 389, "end": 391, "claim": "The system prompt is built with the system instruction memory and set on the chat.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/core/client.ts#L389-L391"}, "render": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 553, "end": 561, "claim": "Global memory is rendered inside `<global_context>` tags and user project memory inside `<user_project_memory>` tags.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L553-L561"}, "sessionmem": {"repo": "gemini-cli", "path": "packages/core/src/config/config.ts", "start": 2615, "end": 2635, "claim": "Session memory wraps extension memory in `<extension_context>` and project memory in `<project_context>`, inside `<loaded_context>`, and is empty when neither has content.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts#L2615-L2635"}, "jit": {"repo": "gemini-cli", "path": "packages/core/src/tools/jit-context.ts", "start": 20, "end": 39, "claim": "`discoverJitContext` asks the memory context manager for context for the accessed path within the workspace directories, and returns an empty string if that fails.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/jit-context.ts#L20-L39"}, "jitgate": {"repo": "gemini-cli", "path": "packages/core/src/context/memoryContextManager.ts", "start": 141, "end": 158, "claim": "`discoverContext` returns nothing in an untrusted folder; otherwise it loads subdirectory memory for the accessed path, passing the paths already loaded.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L141-L158"}, "jitstart": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 559, "end": 572, "claim": "The search starts from the target's parent directory when the target is a file or cannot be stat'ed, and goes up to the ceiling.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L559-L572"}, "jitskip": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 610, "end": 625, "claim": "Files whose identity is already in the loaded set are skipped.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L610-L625"}, "jitmark": {"repo": "gemini-cli", "path": "packages/core/src/context/memoryContextManager.ts", "start": 160, "end": 167, "claim": "Newly loaded files are marked as loaded and their identities cached.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L160-L167"}, "jitappend": {"repo": "gemini-cli", "path": "packages/core/src/tools/jit-context.ts", "start": 45, "end": 64, "claim": "Discovered context is appended to the tool's content between `--- Newly Discovered Project Context ---` and `--- End Project Context ---`, and the content is returned unchanged when there is none.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/jit-context.ts#L45-L64"}, "jitread": {"repo": "gemini-cli", "path": "packages/core/src/tools/read-file.ts", "start": 216, "end": 216, "claim": "The read-file tool appends just-in-time context to its content.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/read-file.ts#L216-L216"}, "jitls": {"repo": "gemini-cli", "path": "packages/core/src/tools/ls.ts", "start": 285, "end": 285, "claim": "The ls tool appends just-in-time context to its result.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/ls.ts#L285-L285"}, "notool": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 872, "end": 872, "claim": "The prompt tells the model to persist long-lived context by editing markdown files with the edit or write-file tool, and states that there is no `save_memory` tool.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L872-L872"}, "projecttier": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 873, "end": 874, "claim": "The prompt describes project instructions in `./GEMINI.md` as committed to the repo and shared with the team, and subdirectory instructions as scoped to one part of the project.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L873-L874"}, "privatetier": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 859, "end": 861, "claim": "The prompt describes private project memory as personal, project-specific notes that must not be committed, with the file kept concise as an index.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L859-L861"}, "globaltier": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 863, "end": 865, "claim": "The prompt describes global personal memory as cross-project preferences and facts about the user, loaded automatically in every session.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L863-L865"}, "routing": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 875, "end": 879, "claim": "The routing rules say to pick exactly one tier per fact, to ask the user when a fact could belong to more than one, and never to duplicate a fact across the four tiers.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L875-L879"}, "reload": {"repo": "gemini-cli", "path": "packages/core/src/commands/memory.ts", "start": 57, "end": 64, "claim": "The refresh command refreshes the memory context manager and then updates the system instruction.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/commands/memory.ts#L57-L64"}, "autooff": {"repo": "gemini-cli", "path": "packages/cli/src/config/settingsSchema.ts", "start": 2432, "end": 2439, "claim": "The experimental `autoMemory` setting defaults to false; its description says patches are written under an inbox folder and nothing is applied until approved.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/cli/src/config/settingsSchema.ts#L2432-L2439"}, "autostart": {"repo": "gemini-cli", "path": "packages/cli/src/utils/autoMemory.ts", "start": 13, "end": 20, "claim": "The memory service is started only when auto memory is enabled.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/cli/src/utils/autoMemory.ts#L13-L20"}, "autodirs": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1134, "end": 1138, "claim": "The memory service works with the project's memory directory, a skills directory, and the `chats` directory under the project temp directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1134-L1138"}, "lock": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1145, "end": 1149, "claim": "When the service cannot acquire the lock, it returns before running extraction.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1145-L1149"}, "throttle": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1178, "end": 1190, "claim": "The service returns early when the most recent run was less than the minimum extraction interval ago.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1178-L1190"}, "autoconst": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 55, "end": 59, "claim": "The minimum extraction interval is 30 minutes, the minimum is 10 user messages, the minimum idle time is 3 hours, the session index holds at most 50, and a batch of new sessions at most 10.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L55-L59"}, "eligible": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 554, "end": 568, "claim": "A session is skipped if it is a subagent session, if it was updated less than the minimum idle time ago, or if it has fewer than the minimum number of user messages.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L554-L568"}, "extractagent": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1258, "end": 1264, "claim": "A `SkillExtractionAgent` definition is built from inputs that include the skills directory, the session index, a summary of existing skills, the memory directory and a summary of the pending inbox.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1258-L1264"}, "extractrun": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1328, "end": 1331, "claim": "The executor is run with the request to extract skills from the provided sessions.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1328-L1331"}, "record": {"repo": "gemini-cli", "path": "packages/core/src/services/chatRecordingService.ts", "start": 892, "end": 899, "claim": "Each record is serialised as one JSON line and appended to the conversation file.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/chatRecordingService.ts#L892-L899"}, "recorddir": {"repo": "gemini-cli", "path": "packages/core/src/services/chatRecordingService.ts", "start": 755, "end": 760, "claim": "A new session's chats directory is `chats` under the project temp directory.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/chatRecordingService.ts#L755-L760"}, "history": {"repo": "gemini-cli", "path": "packages/core/src/core/geminiChat.ts", "start": 421, "end": 421, "claim": "The chat object keeps its history in an `AgentChatHistory` created from the initial history.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/core/geminiChat.ts#L421-L421"}, "embed": {"repo": "gemini-cli", "path": "packages/core/src/core/baseLlmClient.ts", "start": 191, "end": 201, "claim": "`BaseLlmClient` has a `generateEmbedding` method that calls `embedContent` with the configured embedding model.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/core/baseLlmClient.ts#L191-L201"}, "readwhole": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 221, "end": 234, "claim": "Each memory file is read in full with `readFile`, and its content is then processed for imports.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L221-L234"}, "concat": {"repo": "gemini-cli", "path": "packages/core/src/utils/memoryDiscovery.ts", "start": 295, "end": 310, "claim": "Files are concatenated with each one between `--- Context from: <path> ---` and `--- End of Context from: <path> ---` lines, and a file whose content is empty after trimming is dropped.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts#L295-L310"}, "skillscreated": {"repo": "gemini-cli", "path": "packages/core/src/services/memoryService.ts", "start": 1335, "end": 1343, "claim": "After the run, entries in the skills directory that were not there before and do not end in `.patch` are counted as newly created skills.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L1335-L1343"}, "wrap": {"repo": "gemini-cli", "path": "packages/core/src/prompts/snippets.ts", "start": 574, "end": 575, "claim": "The rendered memory sections are wrapped in a `<loaded_context>` block preceded by a horizontal rule, and nothing is rendered when there are no sections.", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts#L574-L575"}}, "repos": [{"id": "gemini-cli", "repo": "google-gemini/gemini-cli", "commit": "fb972b2f87fe7d5b06d37eac711490162d98de2c", "commit_date": "2026-10-02", "kind": "product", "language": "TypeScript", "license": "Apache-2.0", "what": "Google's terminal coding agent", "verdict": "implements", "summary": "File-based memory managed by a `MemoryContextManager` [^created]: it discovers four sets of markdown files [^discover] and delivers them in three tiers [^tiers], with writes done as ordinary file edits [^notool].", "url": "https://github.com/google-gemini/gemini-cli"}], "comparison": {"dimensions": ["In the context window", "On disk, loaded at start", "On disk, loaded on demand", "How memory is written", "Semantic database"], "rows": [{"repo": "gemini-cli", "cells": ["The conversation itself, held in the chat object [^history], plus whatever the three tiers have loaded [^tiers]", "Global `GEMINI.md` under the home directory [^globalpath], the private `MEMORY.md` index for the project [^userproject], and `GEMINI.md` files from the workspace up to the project root [^envpaths], plus active extensions' context files [^extension]", "`GEMINI.md` files in subdirectories, discovered when a file tool touches that folder [^jit] and appended to the tool result [^jitappend]", "The model edits the markdown files with its edit and write tools; there is no memory tool [^notool]. An experimental background extractor is off by default, and its setting describes its output as patches held for review [^autooff]", "None found"]}]}, "deep_dives": [{"repo": "gemini-cli", "headline": "Markdown files, three delivery tiers, and writes that are just file edits", "how_it_works": ["Memory here is a set of markdown files. At start-up the configuration creates a `MemoryContextManager` and refreshes it [^created]. A refresh clears its record of what is loaded, discovers the files, reads them and sorts them into categories [^refresh]. It looks in four places: global, extension, the workspace (only in a trusted folder) and the user's private project memory [^discover].", "The file names are `GEMINI.md` for instructions and `MEMORY.md` for the private index [^filenames]. Global memory is in the Gemini directory under the user's home [^globalpath]. Private project memory is the `MEMORY.md` index in a per-project memory directory [^userproject], which is a `memory` folder inside the project's temp directory [^memdir]; an older file name is used as a fallback [^legacy]. Project files are found by walking up from each workspace root to the project root, marked by `.git` by default [^envpaths], collecting a context file at each level [^upward]. Each file is read in full [^readwhole] and joined to the others between lines naming its path; empty files are dropped [^concat].", "The tiers are about where the text goes, as a comment in the code spells out [^tiers]. Tier 1 is the system instruction: global memory, plus the private project memory when it has content [^sysmem], built into the system prompt [^sysprompt] under their own tags [^render]. Tier 2 is the first user message: extension and project files, wrapped in `<loaded_context>` [^sessionmem].", "Tier 3 is loaded on demand. When a file tool touches a path, it asks for context for that path [^jit]. The search starts in the file's own folder and walks up to the project ceiling [^jitstart], skips every file that is already loaded [^jitskip], and marks the new ones as loaded [^jitmark]. Whatever it finds is appended to the tool's result between two marker lines [^jitappend]. The read-file tool [^jitread] and the ls tool [^jitls] both do this.", "Saving a memory is not a special operation. The prompt tells the model to edit the markdown files directly and says there is no `save_memory` tool [^notool]. It names four destinations: the project's `GEMINI.md` and subdirectory `GEMINI.md` files [^projecttier], the private project memory [^privatetier] and the global personal memory [^globaltier]. The routing rules are strict: one tier per fact, ask when unsure, never duplicate [^routing]. A refresh command re-reads the files and updates the system instruction [^reload].", "There is also an experimental background path, off by default [^autooff] and started only when enabled [^autostart]. It reads past sessions from the chats directory [^autodirs], does not run extraction if another instance holds the lock [^lock] or if the last run was under 30 minutes ago [^throttle][^autoconst], and only considers sessions that are not subagent sessions, have been idle for 3 hours and have at least 10 user messages [^eligible][^autoconst]. An extraction agent then runs over them [^extractagent][^extractrun]. The setting's description says every change is written as a patch file under an inbox folder and nothing is applied until approved [^autooff]; the service also detects new skills created in the skills directory [^skillscreated]."], "diagram": {"caption": "Memory files on the left, the three places they enter the conversation on the right [^tiers].", "mermaid": "flowchart LR\n  g[(\"Global GEMINI.md<br/>home directory\")]:::store\n  p[(\"Private MEMORY.md<br/>per project\")]:::store\n  e[(\"Extension context files\")]:::store\n  r[(\"Project GEMINI.md<br/>workspace up to root\")]:::store\n  s[(\"Subdirectory GEMINI.md\")]:::store\n  t1[\"Tier 1<br/>system instruction\"]:::system\n  t2[\"Tier 2<br/>first user message\"]:::system\n  t3[\"Tier 3<br/>tool result\"]:::system\n  m[\"Model\"]:::external\n  g --> t1\n  p --> t1\n  e --> t2\n  r --> t2\n  s -->|\"when a tool touches the folder\"| t3\n  t1 --> m\n  t2 --> m\n  t3 --> m\n  m -.->|\"edits files to save a memory\"| p\n"}, "key_parts": [{"name": "MemoryContextManager", "path": "packages/core/src/context/memoryContextManager.ts", "role": "Discovers, loads and categorises memory files; serves just-in-time context", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts"}, {"name": "getSystemInstructionMemory", "path": "packages/core/src/config/config.ts", "role": "Tier 1: what goes in the system instruction", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts"}, {"name": "getSessionMemory", "path": "packages/core/src/config/config.ts", "role": "Tier 2: what goes in the first user message", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts"}, {"name": "discoverJitContext", "path": "packages/core/src/tools/jit-context.ts", "role": "Tier 3: called by file tools to fetch and append subdirectory context", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/tools/jit-context.ts"}, {"name": "memoryDiscovery", "path": "packages/core/src/utils/memoryDiscovery.ts", "role": "Finds the files for each tier, including the upward and just-in-time searches", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/memoryDiscovery.ts"}, {"name": "toolUsageRememberingFacts", "path": "packages/core/src/prompts/snippets.ts", "role": "The prompt section that tells the model where to write each kind of memory", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/prompts/snippets.ts"}, {"name": "startMemoryService", "path": "packages/core/src/services/memoryService.ts", "role": "The experimental background extractor over past sessions", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts"}, {"name": "ChatRecordingService", "path": "packages/core/src/services/chatRecordingService.ts", "role": "Appends every session to a JSONL file on disk", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/chatRecordingService.ts"}], "excerpts": [{"path": "packages/core/src/utils/environmentContext.ts", "start": 62, "end": 66, "expect": "Tiered context model", "title": "The three tiers, in the authors' words", "code": "  // Tiered context model (see issue #11488):\n  // - Tier 1 (global): system instruction only\n  // - Tier 2 (extension + project): first user message (here)\n  // - Tier 3 (subdirectory): tool output (JIT)\n  const environmentMemory = config.getSessionMemory();", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/utils/environmentContext.ts#L62-L66"}, {"path": "packages/core/src/config/config.ts", "start": 2591, "end": 2608, "expect": "getSystemInstructionMemory", "title": "Tier 1: the system instruction", "note": "Private project memory joins global memory here when it has content [^sysmem].", "code": "  /**\n   * Returns Tier 1 memory for the system instruction. Global memory and user\n   * project memory go in the system instruction; extension and project memory\n   * are placed in the first user message instead, per the tiered context model.\n   * User project memory is in Tier 1 so mid-session saves are reflected via\n   * system instruction updates.\n   */\n  getSystemInstructionMemory(): string | HierarchicalMemory {\n    if (this.memoryContextManager) {\n      const global = this.memoryContextManager.getGlobalMemory();\n      const userProjectMemory =\n        this.memoryContextManager.getUserProjectMemory();\n      if (userProjectMemory?.trim()) {\n        return { global, userProjectMemory };\n      }\n      return global;\n    }\n    return this.userMemory;", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts#L2591-L2608"}, {"path": "packages/core/src/config/config.ts", "start": 2611, "end": 2635, "expect": "getSessionMemory", "title": "Tier 2: the first user message", "note": "Extension and project files are wrapped in tags inside `<loaded_context>` [^sessionmem].", "code": "  /**\n   * Returns Tier 2 memory (extension + project) for injection into the first\n   * user message.\n   */\n  getSessionMemory(options?: { includeExtensionContext?: boolean }): string {\n    if (!this.memoryContextManager) {\n      return '';\n    }\n    const sections: string[] = [];\n    const includeExtensionContext = options?.includeExtensionContext ?? true;\n    const extension = includeExtensionContext\n      ? this.memoryContextManager.getExtensionMemory()\n      : '';\n    const project = this.memoryContextManager.getEnvironmentMemory();\n    if (extension?.trim()) {\n      sections.push(\n        `<extension_context>\\n${extension.trim()}\\n<\/extension_context>`,\n      );\n    }\n    if (project?.trim()) {\n      sections.push(`<project_context>\\n${project.trim()}\\n<\/project_context>`);\n    }\n    if (sections.length === 0) return '';\n    return `\\n<loaded_context>\\n${sections.join('\\n')}\\n<\/loaded_context>`;\n  }", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/config/config.ts#L2611-L2635"}, {"path": "packages/core/src/context/memoryContextManager.ts", "start": 141, "end": 172, "expect": "discoverContext", "title": "Tier 3: context loaded when a path is touched", "note": "Nothing is loaded in an untrusted folder, and already-loaded paths are passed in [^jitgate].", "code": "  async discoverContext(\n    accessedPath: string,\n    trustedRoots: string[],\n  ): Promise<string> {\n    if (!this.config.isTrustedFolder()) {\n      return '';\n    }\n    const result = await loadJitSubdirectoryMemory(\n      accessedPath,\n      trustedRoots,\n      this.loadedPaths,\n      this.loadedFileIdentities,\n      this.config.getMemoryBoundaryMarkers(),\n    );\n\n    if (result.files.length === 0) {\n      return '';\n    }\n\n    const newFilePaths = result.files.map((f) => f.path);\n    this.markAsLoaded(newFilePaths);\n\n    // Cache identities for newly loaded files\n    if (result.fileIdentities) {\n      for (const identity of result.fileIdentities) {\n        this.loadedFileIdentities.add(identity);\n      }\n    }\n    return concatenateInstructions(\n      result.files.map((f) => ({ filePath: f.path, content: f.content })),\n    );\n  }", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/context/memoryContextManager.ts#L141-L172"}, {"path": "packages/core/src/services/memoryService.ts", "start": 554, "end": 568, "expect": "shouldProcessConversation", "title": "Which past sessions the background extractor will read", "note": "Subagent sessions, recently active sessions and short sessions are skipped [^eligible].", "code": "function shouldProcessConversation(\n  parsed: ConversationRecord & { userMessageCount?: number },\n): boolean {\n  // Skip subagent sessions\n  if (parsed.kind === 'subagent') return false;\n\n  // Skip sessions that are still active (not idle for 3+ hours)\n  const lastUpdated = getTimestampMs(parsed.lastUpdated);\n  if (Date.now() - lastUpdated < MIN_IDLE_MS) return false;\n\n  // Skip sessions with too few user messages\n  if (getUserMessageCount(parsed) < MIN_USER_MESSAGES) return false;\n\n  return true;\n}", "url": "https://github.com/google-gemini/gemini-cli/blob/fb972b2f87fe7d5b06d37eac711490162d98de2c/packages/core/src/services/memoryService.ts#L554-L568"}], "gotchas": ["Each file is read in full [^readwhole], and the prompt asks the model to keep the private memory file concise and use it as an index [^privatetier].", "In an untrusted folder the project's files are not loaded at start [^untrusted] and nothing is discovered on demand [^jitgate].", "A subdirectory file is delivered once: later touches of the same folder find it already loaded [^jitskip].", "Every session is also written to disk, one JSON line per record [^record], under the project's chats directory [^recorddir]. That is a transcript for resuming and for the background extractor [^autodirs], not something loaded into new conversations by the tiers.", "The background extractor is experimental and off by default; its setting describes the output as held for approval [^autooff].", "An embedding method exists on the model client [^embed], but no code was found that calls it."], "searched": ["Searched `packages/core/src` and `packages/cli/src` (excluding tests) for: embedding, vector store, vector db, vector search, sqlite, lancedb, chroma, pinecone, faiss, pgvector, cosine. The only relevant hit is the unused `generateEmbedding` method.", "Searched all packages for callers of `generateEmbedding`: none outside its own definition.", "Checked the `dependencies` of the core and cli packages for a vector or embedded database: none of sqlite, lancedb, chroma, faiss, hnsw found.", "Searched the tool names and registry for a `save_memory` tool: not found; the prompt itself says there is none."]}], "build_your_own": ["Start with files. Markdown that a person can read, edit and commit covers most of what an agent needs to remember, with no extra infrastructure.", "Decide where each kind of memory enters the prompt. Stable, personal facts suit the system instruction; project context suits the first message; narrow context can wait until it is needed.", "Load subdirectory instructions when a tool touches that folder, and deliver each file once.", "Keep one home per fact. Tell the model which file each kind of fact belongs in and to ask when it is unsure, or the same note ends up in three places.", "Let the model write memory with the file tools it already has; a dedicated memory tool is optional.", "Do not load project files from a folder the user has not trusted.", "If you add automatic extraction from past sessions, gate it: wait until a session is idle, require some length, and hold the result for the user to approve."], "implementation": {"title": "File-based memory in about 130 lines of Python", "intro": "One class and four small functions, standard library only. It follows Gemini CLI's design: find the files for each tier, deliver tier 1 for the system instruction and tier 2 for the first message, and discover tier 3 when a tool touches a path. A write is an ordinary file edit followed by `refresh()`.", "dir": "impl", "files": [{"name": "file_memory.py", "code": "\"\"\"File-based agent memory in three tiers: a small reference implementation.\n\nIt follows the design of Gemini CLI's memory, described with source citations\nin the report this file belongs to. Memory is plain markdown files. Nothing is\nembedded or searched: files are loaded whole, and what differs is *where* each\none enters the conversation.\n\n  Tier 1  global + private project memory   -> the system instruction\n  Tier 2  extension + project context files -> the first user message\n  Tier 3  subdirectory context files        -> appended to a tool's result,\n                                               the first time that folder is touched\n\nWritten from scratch for teaching. It is not code from that project.\n\"\"\"\nimport os\n\nCONTEXT_FILENAME = \"GEMINI.md\"          # instruction files, at any directory level\nMEMORY_INDEX_FILENAME = \"MEMORY.md\"     # the private per-project memory index\nGLOBAL_DIR = \".gemini\"                  # under the user's home directory\nJIT_PREFIX = \"\\n\\n--- Newly Discovered Project Context ---\\n\"\nJIT_SUFFIX = \"\\n--- End Project Context ---\"\n\n\ndef find_project_root(start, markers=(\".git\",)):\n    \"\"\"The nearest ancestor of `start` that contains a boundary marker, or None.\"\"\"\n    current = os.path.abspath(start)\n    while True:\n        if any(os.path.exists(os.path.join(current, m)) for m in markers):\n            return current\n        parent = os.path.dirname(current)\n        if parent == current:\n            return None\n        current = parent\n\n\ndef find_upward(start_dir, stop_dir):\n    \"\"\"Context files from `start_dir` up to `stop_dir`, outermost first.\"\"\"\n    found, current, stop = [], os.path.abspath(start_dir), os.path.abspath(stop_dir)\n    while True:\n        candidate = os.path.join(current, CONTEXT_FILENAME)\n        if os.path.isfile(candidate):\n            found.insert(0, candidate)\n        parent = os.path.dirname(current)\n        if current == stop or parent == current:\n            return found\n        current = parent\n\n\ndef read_all(paths):\n    \"\"\"Concatenate files, each between lines naming where it came from. Empty files are dropped.\"\"\"\n    out = []\n    for path in paths:\n        with open(path, encoding=\"utf-8\") as f:\n            text = f.read().strip()\n        if text:\n            out.append(f\"--- Context from: {path} ---\\n{text}\\n--- End of Context from: {path} ---\")\n    return \"\\n\\n\".join(out)\n\n\nclass MemoryStore:\n    def __init__(self, home, project_memory_dir, workspace_roots, trusted=True, extension_files=()):\n        self.home, self.project_memory_dir = home, project_memory_dir\n        self.roots, self.trusted, self.extension_files = list(workspace_roots), trusted, list(extension_files)\n        self.loaded = set()             # real paths already in the conversation\n        self.global_memory = self.user_project_memory = self.project_memory = self.extension_memory = \"\"\n        self.refresh()\n\n    def memory_paths(self):\n        \"\"\"Where each kind of memory lives. A write is an ordinary edit of one of these files.\"\"\"\n        return {\"global\": os.path.join(self.home, GLOBAL_DIR, CONTEXT_FILENAME),\n                \"private_project\": os.path.join(self.project_memory_dir, MEMORY_INDEX_FILENAME),\n                \"project\": [os.path.join(r, CONTEXT_FILENAME) for r in self.roots]}\n\n    def refresh(self):\n        \"\"\"Re-read every tier from disk. Call at start-up and after memory files change.\"\"\"\n        self.loaded.clear()\n        paths = self.memory_paths()\n        global_paths = [p for p in [paths[\"global\"]] if os.path.isfile(p)]\n        private = [p for p in [paths[\"private_project\"]] if os.path.isfile(p)]\n        if not private:                 # fall back to the older private file name\n            legacy = os.path.join(self.project_memory_dir, CONTEXT_FILENAME)\n            private = [legacy] if os.path.isfile(legacy) else []\n        project = []\n        if self.trusted:                # project files are only read in a trusted folder\n            for root in self.roots:\n                ceiling = find_project_root(root) or os.path.abspath(root)\n                project += [p for p in find_upward(root, ceiling) if p not in project]\n            project.sort()\n        extension = [p for p in self.extension_files if os.path.isfile(p)]\n        self.global_memory, self.user_project_memory = read_all(global_paths), read_all(private)\n        self.project_memory, self.extension_memory = read_all(project), read_all(extension)\n        self.loaded.update(os.path.realpath(p) for p in global_paths + private + project + extension)\n\n    def system_instruction_memory(self):\n        \"\"\"Tier 1: goes in the system instruction.\"\"\"\n        parts = []\n        if self.global_memory.strip():\n            parts.append(f\"<global_context>\\n{self.global_memory.strip()}\\n<\/global_context>\")\n        if self.user_project_memory.strip():\n            parts.append(f\"<user_project_memory>\\n{self.user_project_memory.strip()}\\n<\/user_project_memory>\")\n        return \"\\n\".join(parts)\n\n    def session_memory(self):\n        \"\"\"Tier 2: goes in the first user message.\"\"\"\n        sections = []\n        if self.extension_memory.strip():\n            sections.append(f\"<extension_context>\\n{self.extension_memory.strip()}\\n<\/extension_context>\")\n        if self.project_memory.strip():\n            sections.append(f\"<project_context>\\n{self.project_memory.strip()}\\n<\/project_context>\")\n        return f\"\\n<loaded_context>\\n{chr(10).join(sections)}\\n<\/loaded_context>\" if sections else \"\"\n\n    def discover_context(self, accessed_path):\n        \"\"\"Tier 3: context files between a path a tool just touched and the project ceiling.\"\"\"\n        if not self.trusted:\n            return \"\"\n        target = os.path.abspath(accessed_path)\n        roots = [os.path.abspath(r) for r in self.roots\n                 if target == os.path.abspath(r) or target.startswith(os.path.abspath(r) + os.sep)]\n        if not roots:\n            return \"\"                   # outside every workspace root\n        best_root = max(roots, key=len)                     # the deepest root containing the path\n        ceiling = find_project_root(best_root) or best_root\n        start = target if os.path.isdir(target) else os.path.dirname(target)\n        new = [p for p in find_upward(start, ceiling) if os.path.realpath(p) not in self.loaded]\n        self.loaded.update(os.path.realpath(p) for p in new)   # each file is delivered once\n        return read_all(new)\n\n\ndef append_jit_context(tool_output, context):\n    \"\"\"Attach newly discovered context to a tool's result; leave it alone if there is none.\"\"\"\n    return f\"{tool_output}{JIT_PREFIX}{context}{JIT_SUFFIX}\" if context else tool_output", "href": "impl/file_memory.py"}, {"name": "test_file_memory.py", "code": "\"\"\"Tests for file_memory.py. Run: python3 -m unittest -v\"\"\"\nimport os\nimport tempfile\nimport unittest\n\nfrom file_memory import JIT_PREFIX, MemoryStore, append_jit_context, find_upward\n\n\ndef write(path, text):\n    os.makedirs(os.path.dirname(path), exist_ok=True)\n    with open(path, \"w\", encoding=\"utf-8\") as f:\n        f.write(text)\n\n\nclass Base(unittest.TestCase):\n    def setUp(self):\n        self.tmp = tempfile.TemporaryDirectory()\n        t = os.path.realpath(self.tmp.name)\n        self.home, self.repo = os.path.join(t, \"home\"), os.path.join(t, \"repo\")\n        self.private = os.path.join(self.home, \".gemini\", \"tmp\", \"repo-hash\", \"memory\")\n        os.makedirs(os.path.join(self.repo, \".git\"))\n        os.makedirs(self.home)\n\n    def tearDown(self):\n        self.tmp.cleanup()\n\n    def store(self, **kw):\n        return MemoryStore(self.home, self.private, [self.repo], **kw)\n\n\nclass TierOne(Base):\n    def test_global_memory_goes_in_the_system_instruction(self):\n        write(os.path.join(self.home, \".gemini\", \"GEMINI.md\"), \"I prefer pytest.\")\n        s = self.store()\n        self.assertIn(\"<global_context>\", s.system_instruction_memory())\n        self.assertIn(\"I prefer pytest.\", s.system_instruction_memory())\n        self.assertEqual(s.session_memory(), \"\")\n\n    def test_private_project_memory_index_is_tier_one_too(self):\n        write(os.path.join(self.private, \"MEMORY.md\"), \"Local db runs on 5433.\")\n        self.assertIn(\"<user_project_memory>\", self.store().system_instruction_memory())\n\n    def test_memory_md_is_preferred_over_the_legacy_private_file(self):\n        write(os.path.join(self.private, \"MEMORY.md\"), \"new index\")\n        write(os.path.join(self.private, \"GEMINI.md\"), \"old private file\")\n        text = self.store().system_instruction_memory()\n        self.assertIn(\"new index\", text)\n        self.assertNotIn(\"old private file\", text)\n\n    def test_legacy_private_file_is_used_when_there_is_no_index(self):\n        write(os.path.join(self.private, \"GEMINI.md\"), \"old private file\")\n        self.assertIn(\"old private file\", self.store().system_instruction_memory())\n\n\n    def test_an_empty_private_memory_file_adds_nothing(self):\n        write(os.path.join(self.private, \"MEMORY.md\"), \"   \\n\")\n        self.assertEqual(self.store().system_instruction_memory(), \"\")\n\n\nclass TierTwo(Base):\n    def test_project_file_goes_in_the_first_user_message_not_the_system_instruction(self):\n        write(os.path.join(self.repo, \"GEMINI.md\"), \"We use tabs.\")\n        s = self.store()\n        self.assertIn(\"<project_context>\", s.session_memory())\n        self.assertIn(\"We use tabs.\", s.session_memory())\n        self.assertNotIn(\"We use tabs.\", s.system_instruction_memory())\n\n    def test_an_untrusted_folder_loads_no_project_memory(self):\n        write(os.path.join(self.repo, \"GEMINI.md\"), \"We use tabs.\")\n        self.assertEqual(self.store(trusted=False).session_memory(), \"\")\n\n    def test_upward_search_is_outermost_first_and_stops_at_the_project_root(self):\n        write(os.path.join(os.path.dirname(self.repo), \"GEMINI.md\"), \"above the repo\")\n        write(os.path.join(self.repo, \"GEMINI.md\"), \"root\")\n        write(os.path.join(self.repo, \"pkg\", \"GEMINI.md\"), \"pkg\")\n        found = find_upward(os.path.join(self.repo, \"pkg\"), self.repo)\n        self.assertEqual([os.path.relpath(p, self.repo) for p in found], [\"GEMINI.md\", os.path.join(\"pkg\", \"GEMINI.md\")])\n\n\n    def test_a_blank_project_file_adds_no_session_memory(self):\n        write(os.path.join(self.repo, \"GEMINI.md\"), \"\\n\\n\")\n        self.assertEqual(self.store().session_memory(), \"\")\n\n\nclass TierThree(Base):\n    def test_a_subdirectory_file_is_discovered_when_a_tool_touches_that_folder(self):\n        write(os.path.join(self.repo, \"src\", \"auth\", \"GEMINI.md\"), \"Auth rules.\")\n        s = self.store()\n        self.assertNotIn(\"Auth rules.\", s.session_memory())\n        context = s.discover_context(os.path.join(self.repo, \"src\", \"auth\", \"login.ts\"))\n        self.assertIn(\"Auth rules.\", context)\n        self.assertIn(JIT_PREFIX, append_jit_context(\"file contents\", context))\n\n    def test_each_file_is_delivered_only_once(self):\n        write(os.path.join(self.repo, \"src\", \"GEMINI.md\"), \"Src rules.\")\n        s = self.store()\n        self.assertIn(\"Src rules.\", s.discover_context(os.path.join(self.repo, \"src\", \"a.ts\")))\n        self.assertEqual(s.discover_context(os.path.join(self.repo, \"src\", \"b.ts\")), \"\")\n\n    def test_files_already_loaded_at_start_are_not_repeated(self):\n        write(os.path.join(self.repo, \"GEMINI.md\"), \"root rules\")\n        self.assertEqual(self.store().discover_context(os.path.join(self.repo, \"main.ts\")), \"\")\n\n    def test_a_file_that_does_not_exist_yet_uses_its_parent_folder(self):\n        write(os.path.join(self.repo, \"docs\", \"GEMINI.md\"), \"Docs rules.\")\n        self.assertIn(\"Docs rules.\", self.store().discover_context(os.path.join(self.repo, \"docs\", \"new.md\")))\n\n    def test_nothing_is_discovered_outside_the_workspace_or_when_untrusted(self):\n        write(os.path.join(self.repo, \"src\", \"GEMINI.md\"), \"Src rules.\")\n        self.assertEqual(self.store().discover_context(\"/etc/hosts\"), \"\")\n        self.assertEqual(self.store(trusted=False).discover_context(os.path.join(self.repo, \"src\", \"a.ts\")), \"\")\n\n    def test_an_empty_subdirectory_file_adds_nothing_to_the_tool_output(self):\n        write(os.path.join(self.repo, \"src\", \"GEMINI.md\"), \"\")\n        context = self.store().discover_context(os.path.join(self.repo, \"src\", \"a.ts\"))\n        self.assertEqual(append_jit_context(\"out\", context), \"out\")\n\n    def test_no_context_leaves_the_tool_output_unchanged(self):\n        self.assertEqual(append_jit_context(\"out\", \"\"), \"out\")\n\n\nclass Writing(Base):\n    def test_a_saved_memory_is_an_edited_file_and_shows_up_after_refresh(self):\n        s = self.store()\n        self.assertEqual(s.system_instruction_memory(), \"\")\n        write(s.memory_paths()[\"private_project\"], \"Remember: deploy with make ship.\")\n        s.refresh()\n        self.assertIn(\"make ship\", s.system_instruction_memory())\n\n\nif __name__ == \"__main__\":\n    unittest.main()", "href": "impl/test_file_memory.py"}], "run": "python3 -m unittest -v", "mirrors": [{"id": "filenames", "what": "Instruction files are GEMINI.md and the private index is MEMORY.md", "file": "file_memory.py", "start": 17, "end": 18, "citation": "filenames"}, {"id": "upward", "what": "Walk from a directory to its parents, collecting context files outermost first, until the stop directory", "file": "file_memory.py", "start": 36, "end": 46, "citation": "upward"}, {"id": "refresh", "what": "A refresh forgets what was loaded and re-reads every tier", "file": "file_memory.py", "start": 74, "end": 76, "citation": "refresh"}, {"id": "globalpath", "what": "Global memory is under the Gemini directory in the user's home", "file": "file_memory.py", "start": 70, "end": 70, "citation": "globalpath"}, {"id": "userproject", "what": "Private project memory is the MEMORY.md index in the project memory directory", "file": "file_memory.py", "start": 71, "end": 71, "citation": "userproject"}, {"id": "legacy", "what": "If the index is missing, fall back to the older private file", "file": "file_memory.py", "start": 80, "end": 82, "citation": "legacy"}, {"id": "trusted", "what": "Project files are read only in a trusted folder", "file": "file_memory.py", "start": 84, "end": 84, "citation": "discover"}, {"id": "envpaths", "what": "The upward search stops at the project root, or at the workspace root if there is none", "file": "file_memory.py", "start": 86, "end": 88, "citation": "envpaths"}, {"id": "sysmem", "what": "Tier 1 is global memory plus private project memory when it has content", "file": "file_memory.py", "start": 94, "end": 101, "citation": "sysmem"}, {"id": "render", "what": "Global memory and private project memory each get their own tag", "file": "file_memory.py", "start": 98, "end": 100, "citation": "render"}, {"id": "sessionmem", "what": "Tier 2 wraps extension and project memory in tags inside loaded_context, and is empty when there is neither", "file": "file_memory.py", "start": 103, "end": 110, "citation": "sessionmem"}, {"id": "jitgate", "what": "Nothing is discovered on demand in an untrusted folder", "file": "file_memory.py", "start": 114, "end": 115, "citation": "jitgate"}, {"id": "jitstart", "what": "Start from the path's own folder if it is a directory, otherwise from its parent, and go up to the ceiling", "file": "file_memory.py", "start": 123, "end": 124, "citation": "jitstart"}, {"id": "jitskip", "what": "Files already loaded are skipped", "file": "file_memory.py", "start": 124, "end": 124, "citation": "jitskip"}, {"id": "jitmark", "what": "Newly delivered files are marked as loaded", "file": "file_memory.py", "start": 125, "end": 125, "citation": "jitmark"}, {"id": "jitappend", "what": "Discovered context is appended between two marker lines, and output is unchanged when there is none", "file": "file_memory.py", "start": 129, "end": 131, "citation": "jitappend"}, {"id": "concat", "what": "Each file sits between lines naming its path, and a file that is empty after trimming is dropped", "file": "file_memory.py", "start": 49, "end": 57, "citation": "concat"}], "simplifications": ["Python, not TypeScript: the logic is rewritten, not copied.", "One context file name, `GEMINI.md`; the original supports a configurable list of names.", "Files are identified by their real path. The original also deduplicates by file identity to cope with case-insensitive filesystems.", "The `@file` import processing that the original applies to each memory file is not reproduced.", "Tier 1 is returned as bare `<global_context>` and `<user_project_memory>` blocks. The original wraps them in a `<loaded_context>` block after a horizontal rule [^wrap], adds marker lines around the private memory index, and uses a different plain-text layout when there is only global memory.", "MCP server instructions, which the original adds to project memory, are left out.", "The upward search does not have the original's extra stop at the global Gemini directory.", "No background extraction from past sessions, no inbox, and no session recording.", "Whether a folder is trusted is a constructor argument; the original takes it from its trust settings."], "tests_run": 17}, "method": {"scope": "Read: the memory context manager, the file discovery functions, the two configuration methods that assemble tier 1 and tier 2, the just-in-time context module and two tools that call it, the prompt section on memory files, the refresh command, the entry and gating code of the background memory service, and the session recording append path.", "limits": ["The extraction agent's own prompt and the inbox patch format were not read; the report covers only when the background service runs and what it is given.", "How a mid-session edit of a memory file reaches the system instruction, other than through the refresh command, was not traced.", "The `@file` import processor for memory files and the separate skills system were not examined.", "\"No semantic database\" means none was found by the searches listed; it is not a statement about server-side behaviour.", "Behaviour was read from source, not observed by running the agent."]}, "review": {"reviewer": "claim-reviewer agent", "reviewed_at": "2026-10-04", "claims": 48}}</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var data = JSON.parse(document.getElementById("aa-data").textContent);
+  var app = document.getElementById("app");
+
+  // Every string from the data reaches the page through text nodes only.
+  // Citations are numbered in the order they first appear on the page.
+  var citations = data.citations || {}, citeNumber = {}, citeOrder = [];
+  function citeRef(id) {
+    var c = citations[id];
+    if (!c) return document.createTextNode("");
+    if (!(id in citeNumber)) { citeOrder.push(id); citeNumber[id] = citeOrder.length; }
+    var a = document.createElement("a");
+    a.textContent = String(citeNumber[id]);
+    a.title = c.path + ":" + c.start + "-" + c.end;
+    var u = typeof c.url === "string" && c.url.indexOf("https://") === 0 ? c.url : null;
+    if (u) { a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; } else { a.href = "#evidence"; }
+    var sup = document.createElement("sup"); sup.className = "cite"; sup.appendChild(a);
+    return sup;
+  }
+  function rich(text) {
+    var frag = document.createDocumentFragment();
+    var afterCite = false;
+    String(text == null ? "" : text).split(/(`[^`]*`|\s?\[\^[A-Za-z0-9_-]+\])/).forEach(function (part) {
+      if (!part) return;
+      var m = /^\s?\[\^([A-Za-z0-9_-]+)\]$/.exec(part);
+      if (m) {
+        var ref = citeRef(m[1]);
+        if (afterCite && ref.className) ref.className += " next";
+        frag.appendChild(ref); afterCite = true; return;
+      }
+      afterCite = false;
+      if (part.length > 1 && part.charAt(0) === "`" && part.charAt(part.length - 1) === "`") {
+        var c = document.createElement("code"); c.textContent = part.slice(1, -1); frag.appendChild(c);
+      } else frag.appendChild(document.createTextNode(part));
+    });
+    return frag;
+  }
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") el.className = attrs[k]; else el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      if (Array.isArray(c)) c.forEach(function (x) { if (x) el.appendChild(x); });
+      else el.appendChild(typeof c === "string" ? rich(c) : c);
+    }
+    return el;
+  }
+  function raw(text) { return document.createTextNode(text == null ? "" : String(text)); }
+  function safeUrl(u) { return typeof u === "string" && u.indexOf("https://") === 0 ? u : null; }
+  function link(url, node) {
+    var u = safeUrl(url);
+    return u ? h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, node) : h("span", null, node);
+  }
+  function section(id, kicker, title, sub) {
+    var s = h("section", { id: id },
+      h("p", { class: "kicker" }, raw(kicker)), h("h2", null, title), sub ? h("p", { class: "sub" }, sub) : null);
+    app.appendChild(s);
+    return s;
+  }
+  var VERDICT = { implements: "Built in", partial: "Partly built in", delegates: "Left to the developer", absent: "Not found" };
+  var meta = data.meta || {}, repos = data.repos || [], byId = {};
+  repos.forEach(function (r) { byId[r.id] = r; });
+  function repoName(r) { return r.repo || r.id; }
+
+  var single = repos.length === 1, hasDiffs = (data.differences || []).length > 0;
+  var excerptCount = (data.deep_dives || []).reduce(function (a, d) { return a + (d.excerpts || []).length; }, 0);
+  app.appendChild(h("div", { class: "topline" },
+    h("a", { class: "brand", href: "../../" }, raw("Agent Anatomy")),
+    h("a", { href: "../../" }, raw("\u2190 All reports"))));
+  var links = [["compare", single ? "At a glance" : "Side by side"]].concat(repos.map(function (r) { return ["dive-" + r.id, r.id]; }), hasDiffs ? [["differences", "Differences"]] : [], [["build", "Build your own"]], (data.implementation ? [["implementation", "Working code"]] : []), [["evidence", "Evidence"], ["sources", "Sources"]]);
+  app.appendChild(h("header", { class: "head" },
+    h("p", { class: "kicker" }, raw(meta.title || "Report")),
+    h("h1", null, meta.question || meta.title || ""),
+    h("p", { class: "byline" }, raw((single ? "One codebase" : repos.length + " codebases compared") + " \u00b7 " + excerptCount + " verified code excerpts \u00b7 " + (meta.analysed_at || ""))),
+    data.review
+      ? h("p", { class: "reviewed" }, raw(data.review.claims + " claims, each tied to source lines and checked by an independent reviewer pass"))
+      : h("p", { class: "reviewed draft" }, raw("Draft: the claims on this page have not been independently reviewed")),
+    h("p", { class: "answer" }, data.answer || ""),
+    h("ul", { class: "repos" }, repos.map(function (r) {
+      return h("li", null, h("a", { href: "#dive-" + r.id }, raw(repoName(r))),
+        h("span", { class: "verdict " + r.verdict }, raw(VERDICT[r.verdict] || "")),
+        h("span", null, raw((r.kind || "") + (r.language ? " \u00b7 " + r.language : ""))));
+    })),
+    h("p", { class: "contents" }, h("b", null, raw("In this article")), links.map(function (l) { return h("a", { href: "#" + l[0] }, raw(l[1])); }))));
+
+  // ---- Comparison ----
+  var comp = data.comparison || {};
+  var sec = section("compare", single ? "At a glance" : "Side by side", single ? "The short version, before the detail" : "The same question, asked of each codebase", null);
+  sec.appendChild(h("div", { class: "glance" }, (comp.rows || []).map(function (row) {
+    var r = byId[row.repo] || {};
+    return h("div", null,
+      h("h3", null, raw(repoName(r)), h("span", { class: "verdict " + r.verdict }, raw(VERDICT[r.verdict] || ""))),
+      h("dl", null, (comp.dimensions || []).map(function (d, i) {
+        return [h("dt", null, raw(d)), h("dd", null, (row.cells || [])[i] || "")];
+      }).reduce(function (a, b) { return a.concat(b); }, [])));
+  })));
+
+  // ---- Deep dives ----
+  var canvases = [];
+  (data.deep_dives || []).forEach(function (d) {
+    var r = byId[d.repo] || {};
+    sec = section("dive-" + d.repo, repoName(r), d.headline, r.what || null);
+    var body = h("div", { class: "dive" },
+      h("div", { class: "tags" }, h("span", { class: "verdict " + r.verdict }, raw(VERDICT[r.verdict] || "")),
+        h("span", { class: "plain" }, raw(r.kind || "")), r.license ? h("span", { class: "plain" }, raw(r.license + " licence")) : null),
+      h("p", { class: "lead" }, r.summary || ""),
+      (d.how_it_works || []).map(function (p, i) { return h("p", i === 0 && String(p).charAt(0) !== "`" ? { class: "dropcap" } : null, p); }));
+    if (d.diagram && d.diagram.mermaid) {
+      var canvas = h("div", { class: "canvas" }, h("pre", null, raw(d.diagram.mermaid)));
+      canvases.push([canvas, d.diagram.mermaid]);
+      body.appendChild(h("h4", null, "The flow"));
+      body.appendChild(canvas);
+      if (d.diagram.caption) body.appendChild(h("p", { class: "cap" }, d.diagram.caption));
+    }
+    if ((d.key_parts || []).length) {
+      body.appendChild(h("h4", null, "Key parts"));
+      body.appendChild(h("div", { class: "tablewrap" }, h("table", { class: "parts" },
+        h("thead", null, h("tr", null, h("th", null, "Name"), h("th", null, "What it does"), h("th", null, "Where"))),
+        h("tbody", null, d.key_parts.map(function (p) {
+          return h("tr", null, h("td", null, raw(p.name)), h("td", null, p.role), h("td", { class: "path" }, link(p.url, raw(p.path))));
+        })))));
+    }
+    if ((d.excerpts || []).length) {
+      body.appendChild(h("h4", null, "The code"));
+      d.excerpts.forEach(function (ex) {
+        var pre = h("pre", null, String(ex.code).split("\n").map(function (line, i) {
+          return h("span", { class: "ln", "data-n": String(ex.start + i) }, raw(line || " "));
+        }));
+        body.appendChild(h("div", { class: "excerpt" },
+          h("header", null, h("b", null, ex.title), link(ex.url, raw(ex.path + ":" + ex.start + "-" + ex.end))),
+          pre, ex.note ? h("p", null, ex.note) : null));
+      });
+    }
+    if ((d.gotchas || []).length) {
+      body.appendChild(h("h4", null, "Worth knowing"));
+      body.appendChild(h("ul", { class: "plain" }, d.gotchas.map(function (g) { return h("li", null, g); })));
+    }
+    if ((d.searched || []).length) {
+      body.appendChild(h("h4", null, "What was searched"));
+      body.appendChild(h("ul", { class: "plain" }, d.searched.map(function (g) { return h("li", null, g); })));
+    }
+    sec.appendChild(body);
+  });
+
+  if (hasDiffs) {
+    sec = section("differences", "Differences", "Where they differ, and why", null);
+    sec.appendChild(h("div", { class: "grid" }, data.differences.map(function (x) {
+      return h("div", null, h("h3", null, x.title), h("p", null, x.detail));
+    })));
+  }
+
+  sec = section("build", "Build your own", "If you are building your own", single ? "What this implementation suggests, in order of how early you need it." : "What these implementations suggest, in order of how early you need it.");
+  sec.appendChild(h("ol", { class: "steps" }, (data.build_your_own || []).map(function (t) { return h("li", null, t); })));
+  sec.style.borderBottom = "0";
+
+  var impl = data.implementation;
+  if (impl && (impl.files || []).length) {
+    sec.style.borderBottom = "";
+    sec = section("implementation", "A working version", impl.title, null);
+    sec.appendChild(h("p", { class: "lead" }, impl.intro));
+    sec.appendChild(h("p", { class: "runline" },
+      h("span", { class: "verdict implements" }, raw(impl.tests_run + " tests pass")),
+      raw(" \u00b7 run them: "), h("code", null, raw(impl.run || "python3 -m unittest -v")),
+      raw(" \u00b7 download: "), impl.files.map(function (f, i) {
+        return h("span", null, raw(i ? ", " : ""), h("a", { class: "dl", href: f.href, download: "" }, raw(f.name)));
+      })));
+    sec.appendChild(h("h4", null, "How it maps to the original"));
+    sec.appendChild(h("div", { class: "tablewrap" }, h("table", { class: "parts" },
+      h("thead", null, h("tr", null, h("th", null, "Behaviour"), h("th", null, "In this code"), h("th", null, "In the original"))),
+      h("tbody", null, (impl.mirrors || []).map(function (m) {
+        var c = citations[m.citation] || {};
+        return h("tr", null, h("td", { class: "what" }, m.what),
+          h("td", { class: "path" }, raw(m.file + ":" + m.start + "-" + m.end)),
+          h("td", { class: "path" }, link(c.url, raw((c.path || "").split("/").pop() + ":" + c.start + "-" + c.end)), citeRef(m.citation)));
+      })))));
+    impl.files.forEach(function (f) {
+      var first = f.name === impl.files[0].name;
+      var pre = h("pre", null, String(f.code).split("\n").map(function (line, i) {
+        return h("span", { class: "ln", "data-n": String(i + 1) }, raw(line || " "));
+      }));
+      var block = h("div", { class: "excerpt" },
+        h("header", null, h("b", null, raw(f.name)), h("a", { href: f.href, download: "" }, raw("download"))), pre);
+      if (first) { sec.appendChild(h("h4", null, "The code")); sec.appendChild(block); }
+      else {
+        var det = h("details", { class: "more" }, h("summary", null, raw("Show " + f.name)), block);
+        sec.appendChild(det);
+      }
+    });
+    if ((impl.simplifications || []).length) {
+      sec.appendChild(h("h4", null, "What this version leaves out"));
+      sec.appendChild(h("ul", { class: "plain" }, impl.simplifications.map(function (x) { return h("li", null, x); })));
+    }
+  }
+
+  if (citeOrder.length) {
+    sec = section("evidence", "Evidence", "Every claim, and the lines behind it", data.review
+      ? "Each numbered statement was checked against the cited lines by a separate reviewer that did not write the report."
+      : "These citations were checked to exist, but the claims have not been independently reviewed.");
+    sec.appendChild(h("ol", { class: "evidence" }, citeOrder.map(function (id) {
+      var c = citations[id];
+      return h("li", null, h("span", null, c.claim), raw(" "), link(c.url, raw(c.path + ":" + c.start + "-" + c.end)));
+    })));
+  }
+
+  var method = data.method || {};
+  app.appendChild(h("footer", { id: "sources" }, h("div", null,
+    h("strong", null, "Sources and limits"),
+    h("ul", null, repos.map(function (r) {
+      return h("li", null, link(r.url, raw(repoName(r))), raw(" at commit " + String(r.commit).slice(0, 10) + (r.commit_date ? " (" + r.commit_date + ")" : "") + (r.license ? ", " + r.license + " licence" : "")));
+    })),
+    method.scope ? h("p", null, method.scope) : null,
+    h("ul", null, (method.limits || []).concat([
+      "Code excerpts are copied by script from the pinned commits and belong to their authors under the licences above. Explanations are an independent reading of that code, not statements by the maintainers, and these projects change quickly.",
+      data.review
+        ? "The reviewer pass is a second AI agent with no access to the author's reasoning. It reduces errors; it does not make the page infallible. Follow a citation before relying on a claim."
+        : "This is a draft build: no reviewer pass was recorded."
+    ]).map(function (l) { return h("li", null, l); })),
+    h("p", { class: "gen" }, "Generated with agent-anatomy, a Claude Code plugin."))));
+
+  // ---- Diagrams ----
+  var css = getComputedStyle(document.documentElement);
+  function v(name) { return css.getPropertyValue(name).trim(); }
+  function cls(name, key) { return "classDef " + name + " fill:" + v("--d-" + key) + ",stroke:" + v("--rule") + ",stroke-width:1.5px,color:" + v("--d-" + key + "-ink"); }
+  var classDefs = "\n" + [cls("person", "ext"), cls("system", "system"), cls("component", "component"), cls("external", "ext"), cls("store", "store"), cls("queue", "queue")].join("\n") + "\n";
+  function fail(canvas, msg) { canvas.insertBefore(h("p", { class: "note" }, raw(msg)), canvas.firstChild); }
+  if (!canvases.length) return;
+  if (!window.mermaid) {
+    canvases.forEach(function (c) { fail(c[0], "Diagram renderer could not be loaded (offline?). Source shown instead."); });
+    return;
+  }
+  window.mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme: "base",
+    themeVariables: {
+      fontFamily: v("--body"), fontSize: "14px", background: "transparent",
+      primaryColor: v("--d-component"), primaryTextColor: v("--d-component-ink"), primaryBorderColor: v("--rule"),
+      lineColor: v("--d-line"), textColor: v("--ink"), mainBkg: v("--d-component"),
+      clusterBkg: v("--d-group"), clusterBorder: v("--d-line"), titleColor: v("--ink"),
+      edgeLabelBackground: v("--well"), nodeTextColor: v("--d-component-ink"),
+      actorBkg: v("--d-component"), actorBorder: v("--rule"), actorTextColor: v("--d-component-ink"), actorLineColor: v("--d-line"),
+      signalColor: v("--ink"), signalTextColor: v("--ink"), labelBoxBkgColor: v("--sheet"), labelBoxBorderColor: v("--d-line"),
+      labelTextColor: v("--ink"), loopTextColor: v("--ink"), noteBkgColor: v("--sheet"), noteTextColor: v("--ink"), noteBorderColor: v("--d-line"),
+      activationBkgColor: v("--well"), activationBorderColor: v("--d-line")
+    },
+    flowchart: { curve: "basis", useMaxWidth: true, padding: 14, nodeSpacing: 46, rankSpacing: 54 },
+    sequence: { useMaxWidth: true, mirrorActors: false, wrap: true }
+  });
+  canvases.reduce(function (chain, c, i) {
+    return chain.then(function () {
+      var code = c[1];
+      if (/^\s*(flowchart|graph)\b/.test(code)) code += classDefs;
+      return window.mermaid.render("aa-diagram-" + i, code).then(function (out) {
+        c[0].innerHTML = out.svg;
+      }).catch(function (err) {
+        fail(c[0], "This diagram could not be rendered: " + String(err && err.message || err).split("\n")[0]);
+        var stray = document.getElementById("daa-diagram-" + i); if (stray) stray.remove();
+      });
+    });
+  }, Promise.resolve());
+})();
+</script>
+</body>
+</html>

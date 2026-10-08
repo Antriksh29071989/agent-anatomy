@@ -8,7 +8,7 @@ A [Claude Code](https://claude.com/claude-code) plugin. Ask one pinpoint questio
 
 **[Live example: how do agents detect they are stuck in a loop? →](https://antriksh29071989.github.io/agent-anatomy/reports/loop-detection/)**
 
-More reports: [how Gemini CLI compresses chat history](https://antriksh29071989.github.io/agent-anatomy/reports/chat-compression/) · [all reports](https://antriksh29071989.github.io/agent-anatomy/)
+More reports: [how Gemini CLI compresses chat history](https://antriksh29071989.github.io/agent-anatomy/reports/chat-compression/) · [how Gemini CLI implements memory](https://antriksh29071989.github.io/agent-anatomy/reports/memory/) · [all reports](https://antriksh29071989.github.io/agent-anatomy/)
 
 ## Why
 
@@ -80,6 +80,7 @@ python3 -m unittest -v
 |---|---|---|---|
 | Loop detection | Gemini CLI's call-cycle detector and warn-then-stop response; OpenHands' same-result and error-streak rules | [loop_detector.py](reports/loop-detection/impl/loop_detector.py) | [12](reports/loop-detection/impl/test_loop_detector.py) |
 | Chat compression | Gemini CLI's threshold, tool-output budget, safe split, snapshot, self-critique and size guard | [chat_compressor.py](reports/chat-compression/impl/chat_compressor.py) | [19](reports/chat-compression/impl/test_chat_compressor.py) |
+| Memory | Gemini CLI's three tiers of markdown memory: system instruction, first message, and on-demand subdirectory context | [file_memory.py](reports/memory/impl/file_memory.py) | [17](reports/memory/impl/test_file_memory.py) |
 
 Then: where the approaches differ and why, and a "build your own" list. Each report also gets a 1200×630 share card and link-preview tags.
 
